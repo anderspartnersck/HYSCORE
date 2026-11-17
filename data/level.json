@@ -1,0 +1,1712 @@
+{
+ "version": 1,
+ "built": "2026-10-24",
+ "hfov": 75.0,
+ "start": "lobby",
+ "door": "door",
+ "intro": "data/clips/cut_intro",
+ "nodes": {
+  "door": {
+   "id": "door",
+   "area": "OUTSIDE",
+   "pos": [
+    -9.646,
+    -18.936,
+    1.617
+   ],
+   "heading": 0,
+   "pano": "data/pano/door.webp",
+   "hotspots": [
+    {
+     "kind": "cut",
+     "to": "lobby",
+     "yaw": 349.99,
+     "pitch": -22.0,
+     "dist": 13.54,
+     "clip": "data/clips/cut_intro",
+     "label": "LOBBY"
+    }
+   ]
+  },
+  "lobby": {
+   "id": "lobby",
+   "area": "LOBBY",
+   "pos": [
+    -12.0,
+    -5.6,
+    1.6
+   ],
+   "heading": 0,
+   "pano": "data/pano/lobby.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "lobby_n",
+     "yaw": 0.0,
+     "pitch": -22.0,
+     "dist": 4.6,
+     "clip": "data/clips/lobby__lobby_n",
+     "label": ""
+    }
+   ]
+  },
+  "lobby_n": {
+   "id": "lobby_n",
+   "area": "LOBBY",
+   "pos": [
+    -12.0,
+    -1.0,
+    1.6
+   ],
+   "heading": 0,
+   "pano": "data/pano/lobby_n.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "lobby",
+     "yaw": 180.0,
+     "pitch": -22.0,
+     "dist": 4.6,
+     "clip": "data/clips/lobby_n__lobby",
+     "label": ""
+    },
+    {
+     "kind": "walk",
+     "to": "food_entry",
+     "yaw": 270.0,
+     "pitch": -22.0,
+     "dist": 5.2,
+     "clip": "data/clips/lobby_n__food_entry",
+     "label": "PATTY'S POP-UP"
+    },
+    {
+     "kind": "walk",
+     "to": "crossroads",
+     "yaw": 338.75,
+     "pitch": -22.0,
+     "dist": 9.66,
+     "clip": "data/clips/lobby_n__crossroads",
+     "label": "MAIN FLOOR"
+    },
+    {
+     "kind": "walk",
+     "to": "window_area",
+     "yaw": 56.31,
+     "pitch": -22.0,
+     "dist": 6.49,
+     "clip": "data/clips/lobby_n__window_area",
+     "label": "MERC ZEBRA ROW"
+    }
+   ]
+  },
+  "food_entry": {
+   "id": "food_entry",
+   "area": "PATTY'S POP-UP",
+   "pos": [
+    -17.2,
+    -1.0,
+    1.6
+   ],
+   "heading": 270,
+   "pano": "data/pano/food_entry.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "lobby_n",
+     "yaw": 90.0,
+     "pitch": -22.0,
+     "dist": 5.2,
+     "clip": "data/clips/food_entry__lobby_n",
+     "label": "LOBBY"
+    },
+    {
+     "kind": "walk",
+     "to": "food_court",
+     "yaw": 290.56,
+     "pitch": -22.0,
+     "dist": 5.13,
+     "clip": "data/clips/food_entry__food_court",
+     "label": ""
+    },
+    {
+     "kind": "walk",
+     "to": "crossroads",
+     "yaw": 10.7,
+     "pitch": -22.0,
+     "dist": 9.16,
+     "clip": "data/clips/food_entry__crossroads",
+     "label": "MAIN FLOOR"
+    }
+   ]
+  },
+  "food_court": {
+   "id": "food_court",
+   "area": "PATTY'S POP-UP",
+   "pos": [
+    -22.0,
+    0.8,
+    1.6
+   ],
+   "heading": 290,
+   "pano": "data/pano/food_court.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "food_entry",
+     "yaw": 110.56,
+     "pitch": -22.0,
+     "dist": 5.13,
+     "clip": "data/clips/food_court__food_entry",
+     "label": ""
+    },
+    {
+     "kind": "walk",
+     "to": "food_counter",
+     "yaw": 199.98,
+     "pitch": -22.0,
+     "dist": 5.85,
+     "clip": "data/clips/food_court__food_counter",
+     "label": ""
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "P_popup2_0",
+     "yaw": 294.47,
+     "pitch": -2.91,
+     "label": "PATTY'S POP-UP 2-up"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "P_heroes2_0",
+     "yaw": 300.02,
+     "pitch": -3.52,
+     "label": "PATTY MELT'S HEROES 2-up"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "P_diner1_0",
+     "yaw": 307.0,
+     "pitch": -4.22,
+     "label": "PATTY MELT (1-up, the Diner)"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "P_popup1_0",
+     "yaw": 314.9,
+     "pitch": -4.95,
+     "label": "PATTY'S POP-UP (1-up)"
+    }
+   ]
+  },
+  "food_counter": {
+   "id": "food_counter",
+   "area": "PATTY'S POP-UP",
+   "pos": [
+    -24.0,
+    -4.7,
+    1.6
+   ],
+   "heading": 200,
+   "pano": "data/pano/food_counter.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "food_court",
+     "yaw": 19.98,
+     "pitch": -22.0,
+     "dist": 5.85,
+     "clip": "data/clips/food_counter__food_court",
+     "label": ""
+    }
+   ]
+  },
+  "crossroads": {
+   "id": "crossroads",
+   "area": "MAIN FLOOR",
+   "pos": [
+    -15.5,
+    8.0,
+    1.6
+   ],
+   "heading": 0,
+   "pano": "data/pano/crossroads.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "lobby_n",
+     "yaw": 158.75,
+     "pitch": -22.0,
+     "dist": 9.66,
+     "clip": "data/clips/crossroads__lobby_n",
+     "label": "LOBBY"
+    },
+    {
+     "kind": "walk",
+     "to": "food_entry",
+     "yaw": 190.7,
+     "pitch": -22.0,
+     "dist": 9.16,
+     "clip": "data/clips/crossroads__food_entry",
+     "label": "PATTY'S POP-UP"
+    },
+    {
+     "kind": "walk",
+     "to": "blacklight",
+     "yaw": 298.61,
+     "pitch": -22.0,
+     "dist": 6.26,
+     "clip": "data/clips/crossroads__blacklight",
+     "label": "BLACKLIGHT AREA"
+    },
+    {
+     "kind": "walk",
+     "to": "forest_entry",
+     "yaw": 352.37,
+     "pitch": -22.0,
+     "dist": 11.3,
+     "clip": "data/clips/crossroads__forest_entry",
+     "label": "HYSCORE FOREST"
+    },
+    {
+     "kind": "walk",
+     "to": "palace_entry",
+     "yaw": 34.05,
+     "pitch": -22.0,
+     "dist": 8.93,
+     "clip": "data/clips/crossroads__palace_entry",
+     "label": "COLEMAN'S PALACE"
+    }
+   ]
+  },
+  "blacklight": {
+   "id": "blacklight",
+   "area": "BLACKLIGHT AREA",
+   "pos": [
+    -21.0,
+    11.0,
+    1.6
+   ],
+   "heading": 270,
+   "pano": "data/pano/blacklight.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "crossroads",
+     "yaw": 118.61,
+     "pitch": -22.0,
+     "dist": 6.26,
+     "clip": "data/clips/blacklight__crossroads",
+     "label": "MAIN FLOOR"
+    },
+    {
+     "kind": "walk",
+     "to": "air_hockey",
+     "yaw": 258.69,
+     "pitch": -22.0,
+     "dist": 3.06,
+     "clip": "data/clips/blacklight__air_hockey",
+     "label": ""
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "B2_suckup_0",
+     "yaw": 9.93,
+     "pitch": -7.78,
+     "label": "SUCK UP"
+    }
+   ]
+  },
+  "air_hockey": {
+   "id": "air_hockey",
+   "area": "BLACKLIGHT AREA",
+   "pos": [
+    -24.0,
+    10.4,
+    1.6
+   ],
+   "heading": 180,
+   "pano": "data/pano/air_hockey.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "blacklight",
+     "yaw": 78.69,
+     "pitch": -22.0,
+     "dist": 3.06,
+     "clip": "data/clips/air_hockey__blacklight",
+     "label": ""
+    },
+    {
+     "kind": "walk",
+     "to": "ht_row",
+     "yaw": 317.56,
+     "pitch": -22.0,
+     "dist": 4.74,
+     "clip": "data/clips/air_hockey__ht_row",
+     "label": ""
+    },
+    {
+     "kind": "walk",
+     "to": "grove_entry",
+     "yaw": 273.58,
+     "pitch": -22.0,
+     "dist": 9.62,
+     "clip": "data/clips/air_hockey__grove_entry",
+     "label": "GNOME GROVE"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "AH_rivalry",
+     "yaw": 226.97,
+     "pitch": -9.55,
+     "label": "ONE TIMER: THE HIGH TABLE"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "AH_nachos",
+     "yaw": 180.0,
+     "pitch": -13.63,
+     "label": "ONE TIMER: THE HIGH TABLE"
+    }
+   ]
+  },
+  "ht_row": {
+   "id": "ht_row",
+   "area": "BLACKLIGHT AREA",
+   "pos": [
+    -27.2,
+    13.9,
+    1.6
+   ],
+   "heading": 0,
+   "pano": "data/pano/ht_row.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "air_hockey",
+     "yaw": 137.56,
+     "pitch": -22.0,
+     "dist": 4.74,
+     "clip": "data/clips/ht_row__air_hockey",
+     "label": ""
+    },
+    {
+     "kind": "walk",
+     "to": "grove_entry",
+     "yaw": 245.62,
+     "pitch": -22.0,
+     "dist": 7.03,
+     "clip": "data/clips/ht_row__grove_entry",
+     "label": "GNOME GROVE"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "B_hivemind_0",
+     "yaw": 313.22,
+     "pitch": -7.2,
+     "label": "ONE-TIMER: THE HIGH TABLE — HIVEMIND EDITION"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "B_hightable_0",
+     "yaw": 19.62,
+     "pitch": -9.79,
+     "label": "ONE-TIMER: THE HIGH TABLE (2-player, bees + queens)"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "B_ht1up_0",
+     "yaw": 47.84,
+     "pitch": -7.06,
+     "label": "ONE-TIMER: THE HIGH TABLE — 1-UP (HYSCORE)"
+    }
+   ]
+  },
+  "grove_entry": {
+   "id": "grove_entry",
+   "area": "GNOME GROVE",
+   "pos": [
+    -33.6,
+    11.0,
+    1.6
+   ],
+   "heading": 270,
+   "pano": "data/pano/grove_entry.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "ht_row",
+     "yaw": 65.62,
+     "pitch": -22.0,
+     "dist": 7.03,
+     "clip": "data/clips/grove_entry__ht_row",
+     "label": "BLACKLIGHT AREA"
+    },
+    {
+     "kind": "walk",
+     "to": "air_hockey",
+     "yaw": 93.58,
+     "pitch": -22.0,
+     "dist": 9.62,
+     "clip": "data/clips/grove_entry__air_hockey",
+     "label": "BLACKLIGHT AREA"
+    },
+    {
+     "kind": "walk",
+     "to": "grove_mid",
+     "yaw": 270.0,
+     "pitch": -22.0,
+     "dist": 5.0,
+     "clip": "data/clips/grove_entry__grove_mid",
+     "label": ""
+    }
+   ]
+  },
+  "grove_mid": {
+   "id": "grove_mid",
+   "area": "GNOME GROVE",
+   "pos": [
+    -38.6,
+    11.0,
+    1.6
+   ],
+   "heading": 270,
+   "pano": "data/pano/grove_mid.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "grove_entry",
+     "yaw": 90.0,
+     "pitch": -22.0,
+     "dist": 5.0,
+     "clip": "data/clips/grove_mid__grove_entry",
+     "label": ""
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "G2_pax_0",
+     "yaw": 157.02,
+     "pitch": -2.48,
+     "label": "PAX GNOMANIA — CLASSICAL"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "G2_welsh_0",
+     "yaw": 154.15,
+     "pitch": -2.77,
+     "label": "GNOME GROVE — WHAT OF THE WELSH"
+    }
+   ]
+  },
+  "forest_entry": {
+   "id": "forest_entry",
+   "area": "HYSCORE FOREST",
+   "pos": [
+    -17.0,
+    19.2,
+    1.6
+   ],
+   "heading": 0,
+   "pano": "data/pano/forest_entry.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "crossroads",
+     "yaw": 172.37,
+     "pitch": -22.0,
+     "dist": 11.3,
+     "clip": "data/clips/forest_entry__crossroads",
+     "label": "MAIN FLOOR"
+    },
+    {
+     "kind": "walk",
+     "to": "forest_mid",
+     "yaw": 319.57,
+     "pitch": -22.0,
+     "dist": 7.09,
+     "clip": "data/clips/forest_entry__forest_mid",
+     "label": ""
+    }
+   ]
+  },
+  "forest_mid": {
+   "id": "forest_mid",
+   "area": "HYSCORE FOREST",
+   "pos": [
+    -21.6,
+    24.6,
+    1.6
+   ],
+   "heading": 270,
+   "pano": "data/pano/forest_mid.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "forest_entry",
+     "yaw": 139.57,
+     "pitch": -22.0,
+     "dist": 7.09,
+     "clip": "data/clips/forest_mid__forest_entry",
+     "label": ""
+    },
+    {
+     "kind": "walk",
+     "to": "forest_welcome",
+     "yaw": 270.0,
+     "pitch": -22.0,
+     "dist": 5.8,
+     "clip": "data/clips/forest_mid__forest_welcome",
+     "label": ""
+    },
+    {
+     "kind": "walk",
+     "to": "palace_mid",
+     "yaw": 103.13,
+     "pitch": -22.0,
+     "dist": 12.32,
+     "clip": "data/clips/forest_mid__palace_mid",
+     "label": "COLEMAN'S PALACE"
+    },
+    {
+     "kind": "walk",
+     "to": "onetimer_1up",
+     "yaw": 43.83,
+     "pitch": -22.0,
+     "dist": 3.47,
+     "clip": "data/clips/forest_mid__onetimer_1up",
+     "label": ""
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "FJ_merc_0",
+     "yaw": 200.45,
+     "pitch": -3.99,
+     "label": "MERC ZEBRA"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "FJ_maygray_0",
+     "yaw": 204.67,
+     "pitch": -4.76,
+     "label": "MERC ZEBRA — MAY GRAY"
+    }
+   ]
+  },
+  "forest_welcome": {
+   "id": "forest_welcome",
+   "area": "HYSCORE FOREST",
+   "pos": [
+    -27.4,
+    24.6,
+    1.6
+   ],
+   "heading": 200,
+   "pano": "data/pano/forest_welcome.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "forest_mid",
+     "yaw": 90.0,
+     "pitch": -22.0,
+     "dist": 5.8,
+     "clip": "data/clips/forest_welcome__forest_mid",
+     "label": ""
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "FI_suckup_0",
+     "yaw": 158.54,
+     "pitch": -3.98,
+     "label": "SUCK UP"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "FI_meanstreets_0",
+     "yaw": 154.07,
+     "pitch": -4.75,
+     "label": "I THOUGHT YOU WERE DEAD — MEAN STREETS"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "F1_merc_0",
+     "yaw": 212.23,
+     "pitch": -5.51,
+     "label": "MERC ZEBRA"
+    }
+   ]
+  },
+  "palace_entry": {
+   "id": "palace_entry",
+   "area": "COLEMAN'S PALACE",
+   "pos": [
+    -10.5,
+    15.4,
+    1.6
+   ],
+   "heading": 0,
+   "pano": "data/pano/palace_entry.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "crossroads",
+     "yaw": 214.05,
+     "pitch": -22.0,
+     "dist": 8.93,
+     "clip": "data/clips/palace_entry__crossroads",
+     "label": "MAIN FLOOR"
+    },
+    {
+     "kind": "walk",
+     "to": "palace_mid",
+     "yaw": 8.0,
+     "pitch": -22.0,
+     "dist": 6.46,
+     "clip": "data/clips/palace_entry__palace_mid",
+     "label": ""
+    }
+   ]
+  },
+  "palace_mid": {
+   "id": "palace_mid",
+   "area": "COLEMAN'S PALACE",
+   "pos": [
+    -9.6,
+    21.8,
+    1.6
+   ],
+   "heading": 0,
+   "pano": "data/pano/palace_mid.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "palace_entry",
+     "yaw": 188.0,
+     "pitch": -22.0,
+     "dist": 6.46,
+     "clip": "data/clips/palace_mid__palace_entry",
+     "label": ""
+    },
+    {
+     "kind": "walk",
+     "to": "forest_mid",
+     "yaw": 283.13,
+     "pitch": -22.0,
+     "dist": 12.32,
+     "clip": "data/clips/palace_mid__forest_mid",
+     "label": "HYSCORE FOREST"
+    },
+    {
+     "kind": "walk",
+     "to": "palace_trasimene",
+     "yaw": 81.25,
+     "pitch": -22.0,
+     "dist": 2.63,
+     "clip": "data/clips/palace_mid__palace_trasimene",
+     "label": ""
+    },
+    {
+     "kind": "walk",
+     "to": "hallway",
+     "yaw": 37.69,
+     "pitch": -22.0,
+     "dist": 8.34,
+     "clip": "data/clips/palace_mid__hallway",
+     "label": "THE HALLWAY"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "C1_pax_1",
+     "yaw": 341.89,
+     "pitch": -3.0,
+     "label": "PAX GNOMANIA — CLASSICAL"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "ROOM_palace_mid_0",
+     "yaw": 0,
+     "pitch": -6,
+     "label": "FOG AND FIRE: THE LUNAR PACT"
+    }
+   ]
+  },
+  "palace_trasimene": {
+   "id": "palace_trasimene",
+   "area": "COLEMAN'S PALACE",
+   "pos": [
+    -7.0,
+    22.2,
+    1.6
+   ],
+   "heading": 90,
+   "pano": "data/pano/palace_trasimene.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "palace_mid",
+     "yaw": 261.25,
+     "pitch": -22.0,
+     "dist": 2.63,
+     "clip": "data/clips/palace_trasimene__palace_mid",
+     "label": ""
+    }
+   ]
+  },
+  "hallway": {
+   "id": "hallway",
+   "area": "THE HALLWAY",
+   "pos": [
+    -4.5,
+    28.4,
+    1.6
+   ],
+   "heading": 0,
+   "pano": "data/pano/hallway.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "palace_mid",
+     "yaw": 217.69,
+     "pitch": -22.0,
+     "dist": 8.34,
+     "clip": "data/clips/hallway__palace_mid",
+     "label": "COLEMAN'S PALACE"
+    },
+    {
+     "kind": "walk",
+     "to": "hallway_mid",
+     "yaw": 0.0,
+     "pitch": -22.0,
+     "dist": 9.6,
+     "clip": "data/clips/hallway__hallway_mid",
+     "label": ""
+    }
+   ]
+  },
+  "hallway_mid": {
+   "id": "hallway_mid",
+   "area": "THE HALLWAY",
+   "pos": [
+    -4.5,
+    38.0,
+    1.6
+   ],
+   "heading": 0,
+   "pano": "data/pano/hallway_mid.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "hallway",
+     "yaw": 180.0,
+     "pitch": -22.0,
+     "dist": 9.6,
+     "clip": "data/clips/hallway_mid__hallway",
+     "label": ""
+    },
+    {
+     "kind": "walk",
+     "to": "gateway",
+     "yaw": 0.0,
+     "pitch": -22.0,
+     "dist": 11.0,
+     "clip": "data/clips/hallway_mid__gateway",
+     "label": "HYSCORE GATEWAY"
+    }
+   ]
+  },
+  "gateway": {
+   "id": "gateway",
+   "area": "HYSCORE GATEWAY",
+   "pos": [
+    -4.5,
+    49.0,
+    1.6
+   ],
+   "heading": 0,
+   "pano": "data/pano/gateway.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "hallway_mid",
+     "yaw": 180.0,
+     "pitch": -22.0,
+     "dist": 11.0,
+     "clip": "data/clips/gateway__hallway_mid",
+     "label": "THE HALLWAY"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "ROOM_gateway_0",
+     "yaw": 346,
+     "pitch": -6,
+     "label": "ER$N — HYSCORE GATEWAY EDITION"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "ROOM_gateway_1",
+     "yaw": 14,
+     "pitch": -6,
+     "label": "OiL! — THE HOME GAME"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "ROOM_gateway_2",
+     "yaw": 0,
+     "pitch": -4,
+     "label": "THE STRAND ON GRAND"
+    }
+   ]
+  },
+  "window_area": {
+   "id": "window_area",
+   "area": "MERC ZEBRA ROW",
+   "pos": [
+    -6.6,
+    2.6,
+    1.6
+   ],
+   "heading": 0,
+   "pano": "data/pano/window_area.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "lobby_n",
+     "yaw": 236.31,
+     "pitch": -22.0,
+     "dist": 6.49,
+     "clip": "data/clips/window_area__lobby_n",
+     "label": "LOBBY"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "W_merc_0",
+     "yaw": 128.72,
+     "pitch": -7.99,
+     "label": "MERC ZEBRA"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "W_maygray_0",
+     "yaw": 108.93,
+     "pitch": -9.62,
+     "label": "MERC ZEBRA — MAY GRAY"
+    }
+   ]
+  },
+  "onetimer_1up": {
+   "id": "onetimer_1up",
+   "area": "HYSCORE FOREST",
+   "pos": [
+    -19.2,
+    27.1,
+    1.6
+   ],
+   "heading": 0,
+   "pano": "data/pano/onetimer_1up.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "forest_mid",
+     "yaw": 223.83,
+     "pitch": -22.0,
+     "dist": 3.47,
+     "clip": "data/clips/onetimer_1up__forest_mid",
+     "label": ""
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "F_ht1up_0",
+     "yaw": 0.0,
+     "pitch": -10.55,
+     "label": "ONE-TIMER: THE HIGH TABLE — 1-UP (HYSCORE)"
+    }
+   ]
+  }
+ },
+ "exhibits": {
+  "FJ_merc_0": {
+   "id": "FJ_merc_0",
+   "node": "forest_mid",
+   "cab": "merc",
+   "title": "MERC ZEBRA",
+   "game": "MERC ZEBRA",
+   "pitch": "May-Gray Valley delivery driver — KEEP MOVING, shake the cops, every customer complains.",
+   "controls": "the car AUTO-ROLLS forward (KEEP MOVING) · ◄ ► steer · ↑/Z gas · ↓/X brake to slow · SHIFT lay low = stop/hide + SURVEY (camera pulls out to scout the route) · SPACE ride (pickup/drop) · H horn",
+   "launch": [],
+   "clip": "data/exhibits/FJ_merc_0",
+   "labs": [
+    {
+     "label": "PLAY MERC ZEBRA",
+     "url": "https://anderspartnersck.github.io/MERCZEBRA/"
+    },
+    {
+     "label": "MERC ZEBRA — 3D EDITION",
+     "url": "https://anderspartnersck.github.io/MERCZEBRA/3d.html"
+    }
+   ],
+   "frames": 13
+  },
+  "FJ_maygray_0": {
+   "id": "FJ_maygray_0",
+   "node": "forest_mid",
+   "cab": "maygray",
+   "title": "MERC ZEBRA — MAY GRAY",
+   "game": "MERC ZEBRA",
+   "pitch": "May-Gray Valley delivery driver — KEEP MOVING, shake the cops, every customer complains.",
+   "controls": "the car AUTO-ROLLS forward (KEEP MOVING) · ◄ ► steer · ↑/Z gas · ↓/X brake to slow · SHIFT lay low = stop/hide + SURVEY (camera pulls out to scout the route) · SPACE ride (pickup/drop) · H horn",
+   "launch": [],
+   "clip": "data/exhibits/FJ_maygray_0",
+   "labs": [
+    {
+     "label": "PLAY MERC ZEBRA — MAY GRAY",
+     "url": "https://anderspartnersck.github.io/MERCZEBRA/?cab=maygray"
+    },
+    {
+     "label": "MERC ZEBRA — 3D EDITION",
+     "url": "https://anderspartnersck.github.io/MERCZEBRA/3d.html"
+    }
+   ],
+   "frames": 13
+  },
+  "FI_suckup_0": {
+   "id": "FI_suckup_0",
+   "node": "forest_welcome",
+   "cab": "suckup",
+   "title": "SUCK UP",
+   "game": "SUCK UP",
+   "pitch": "Abduct the herd with your tractor BEAM, dodge the military, don't trip the alert.",
+   "controls": "A/D/E/C move · W BEAM · S WARBLE · SPACE coin · ESC quit",
+   "launch": [],
+   "clip": "data/exhibits/FI_suckup_0",
+   "labs": [
+    {
+     "label": "PLAY SUCK UP",
+     "url": "https://anderspartnersck.github.io/suck-up/"
+    }
+   ],
+   "frames": 13
+  },
+  "FI_meanstreets_0": {
+   "id": "FI_meanstreets_0",
+   "node": "forest_welcome",
+   "cab": "meanstreets",
+   "title": "I THOUGHT YOU WERE DEAD — MEAN STREETS",
+   "game": "I THOUGHT YOU WERE DEAD",
+   "pitch": "Cleveland Bob quick-draw duels — read the tell, pick your lane, the best moment is frame one.",
+   "controls": "↑/2/↓ aim head/center/wing · ◄/► WHOA stance · any key to draw",
+   "launch": [],
+   "clip": "data/exhibits/FI_meanstreets_0",
+   "labs": [
+    {
+     "label": "PLAY I THOUGHT YOU WERE DEAD",
+     "url": "https://anderspartnersck.github.io/ITHOUGHTYOUWEREDEAD/"
+    },
+    {
+     "label": "MEAN STREETS CAB",
+     "url": "https://anderspartnersck.github.io/ITHOUGHTYOUWEREDEAD/cab_desktop.html"
+    }
+   ],
+   "frames": 13
+  },
+  "F1_merc_0": {
+   "id": "F1_merc_0",
+   "node": "forest_welcome",
+   "cab": "merc",
+   "title": "MERC ZEBRA",
+   "game": "MERC ZEBRA",
+   "pitch": "May-Gray Valley delivery driver — KEEP MOVING, shake the cops, every customer complains.",
+   "controls": "the car AUTO-ROLLS forward (KEEP MOVING) · ◄ ► steer · ↑/Z gas · ↓/X brake to slow · SHIFT lay low = stop/hide + SURVEY (camera pulls out to scout the route) · SPACE ride (pickup/drop) · H horn",
+   "launch": [],
+   "clip": "data/exhibits/F1_merc_0",
+   "labs": [
+    {
+     "label": "PLAY MERC ZEBRA",
+     "url": "https://anderspartnersck.github.io/MERCZEBRA/"
+    },
+    {
+     "label": "MERC ZEBRA — 3D EDITION",
+     "url": "https://anderspartnersck.github.io/MERCZEBRA/3d.html"
+    }
+   ],
+   "frames": 13
+  },
+  "AH_rivalry": {
+   "id": "AH_rivalry",
+   "node": "air_hockey",
+   "cab": null,
+   "title": "ONE TIMER: THE HIGH TABLE",
+   "game": "ONE TIMER: THE HIGH TABLE",
+   "pitch": "Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
+   "controls": null,
+   "launch": [],
+   "clip": "data/exhibits/AH_rivalry",
+   "labs": [
+    {
+     "label": "PLAY THE HIGH TABLE",
+     "url": "https://anderspartnersck.github.io/high-table/"
+    }
+   ],
+   "frames": 13
+  },
+  "AH_nachos": {
+   "id": "AH_nachos",
+   "node": "air_hockey",
+   "cab": null,
+   "title": "ONE TIMER: THE HIGH TABLE",
+   "game": "ONE TIMER: THE HIGH TABLE",
+   "pitch": "Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
+   "controls": null,
+   "launch": [],
+   "clip": "data/exhibits/AH_nachos",
+   "labs": [
+    {
+     "label": "PLAY THE HIGH TABLE",
+     "url": "https://anderspartnersck.github.io/high-table/"
+    }
+   ],
+   "frames": 13
+  },
+  "B_hivemind_0": {
+   "id": "B_hivemind_0",
+   "node": "ht_row",
+   "cab": "hivemind",
+   "title": "ONE-TIMER: THE HIGH TABLE — HIVEMIND EDITION",
+   "game": "ONE TIMER: THE HIGH TABLE",
+   "pitch": "Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
+   "controls": "move = stick / mouse · GET BIG (team power) · TRAP (catch) · BLAST (fire it) · first to 7",
+   "launch": [],
+   "clip": "data/exhibits/B_hivemind_0",
+   "labs": [
+    {
+     "label": "PLAY THE HIGH TABLE",
+     "url": "https://anderspartnersck.github.io/high-table/"
+    }
+   ],
+   "frames": 13
+  },
+  "B_hightable_0": {
+   "id": "B_hightable_0",
+   "node": "ht_row",
+   "cab": "hightable",
+   "title": "ONE-TIMER: THE HIGH TABLE (2-player, bees + queens)",
+   "game": "ONE TIMER: THE HIGH TABLE",
+   "pitch": "Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
+   "controls": "move = stick / mouse · GET BIG (team power) · TRAP (catch) · BLAST (fire it) · first to 7",
+   "launch": [],
+   "clip": "data/exhibits/B_hightable_0",
+   "labs": [
+    {
+     "label": "PLAY THE HIGH TABLE",
+     "url": "https://anderspartnersck.github.io/high-table/"
+    }
+   ],
+   "frames": 13
+  },
+  "B_ht1up_0": {
+   "id": "B_ht1up_0",
+   "node": "ht_row",
+   "cab": "ht1up",
+   "title": "ONE-TIMER: THE HIGH TABLE — 1-UP (HYSCORE)",
+   "game": "ONE TIMER: THE HIGH TABLE",
+   "pitch": "Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
+   "controls": "move = stick / mouse · GET BIG (team power) · TRAP (catch) · BLAST (fire it) · first to 7",
+   "launch": [],
+   "clip": "data/exhibits/B_ht1up_0",
+   "labs": [
+    {
+     "label": "PLAY THE HIGH TABLE",
+     "url": "https://anderspartnersck.github.io/high-table/"
+    },
+    {
+     "label": "HYSCORE 1UP · QUARTER-EATER",
+     "url": "https://anderspartnersck.github.io/high-table/?hyscore"
+    }
+   ],
+   "frames": 13
+  },
+  "B2_suckup_0": {
+   "id": "B2_suckup_0",
+   "node": "blacklight",
+   "cab": "suckup",
+   "title": "SUCK UP",
+   "game": "SUCK UP",
+   "pitch": "Abduct the herd with your tractor BEAM, dodge the military, don't trip the alert.",
+   "controls": "A/D/E/C move · W BEAM · S WARBLE · SPACE coin · ESC quit",
+   "launch": [],
+   "clip": "data/exhibits/B2_suckup_0",
+   "labs": [
+    {
+     "label": "PLAY SUCK UP",
+     "url": "https://anderspartnersck.github.io/suck-up/"
+    }
+   ],
+   "frames": 13
+  },
+  "G2_pax_0": {
+   "id": "G2_pax_0",
+   "node": "grove_mid",
+   "cab": "pax",
+   "title": "PAX GNOMANIA — CLASSICAL",
+   "game": "HADRIAN · PAX GNOMANIA",
+   "pitch": "SUCK UP in Roman armor — the Ornithopter Corps GRAPPLEs livestock over the legion.",
+   "controls": "A/D/E/C move · W GRAPPLE · S JINK · SPACE coin · ESC quit",
+   "launch": [],
+   "clip": "data/exhibits/G2_pax_0",
+   "labs": [
+    {
+     "label": "PLAY PAX GNOMANIA",
+     "url": "https://anderspartnersck.github.io/PAXGNOMANIA/"
+    }
+   ],
+   "frames": 13
+  },
+  "G2_welsh_0": {
+   "id": "G2_welsh_0",
+   "node": "grove_mid",
+   "cab": "welsh",
+   "title": "GNOME GROVE — WHAT OF THE WELSH",
+   "game": "HADRIAN · PAX GNOMANIA",
+   "pitch": "SUCK UP in Roman armor — the Ornithopter Corps GRAPPLEs livestock over the legion.",
+   "controls": "A/D/E/C move · W GRAPPLE · S JINK · SPACE coin · ESC quit",
+   "launch": [],
+   "clip": "data/exhibits/G2_welsh_0",
+   "labs": [
+    {
+     "label": "PLAY PAX GNOMANIA",
+     "url": "https://anderspartnersck.github.io/PAXGNOMANIA/"
+    }
+   ],
+   "frames": 13
+  },
+  "P_popup2_0": {
+   "id": "P_popup2_0",
+   "node": "food_court",
+   "cab": "popup2",
+   "title": "PATTY'S POP-UP 2-up",
+   "game": "PATTY MELT",
+   "pitch": "You cook — but you can't serve. Billy runs the plates, and only when you holler (HEY BILLY!), which costs you a burger. Carry the kid through the rush, keep the doors open.",
+   "controls": "◄ ► move · SPACE/F flip · C cheese · X toast · B HEY BILLY · P pause",
+   "launch": [],
+   "clip": "data/exhibits/P_popup2_0",
+   "labs": [
+    {
+     "label": "PLAY PATTY MELT",
+     "url": "https://anderspartnersck.github.io/PATTYMELT/"
+    }
+   ],
+   "frames": 13
+  },
+  "P_heroes2_0": {
+   "id": "P_heroes2_0",
+   "node": "food_court",
+   "cab": "heroes2",
+   "title": "PATTY MELT'S HEROES 2-up",
+   "game": "PATTY MELT'S HEROES",
+   "pitch": "The free school edition — same game, gentle stakes, the cafeteria's FULL MENU (incl. grilled cheese). Feed the student section, carry Billy.",
+   "controls": "◄ ► move · F flip · C cheese · X toast · SPACE HEY BILLY",
+   "launch": [],
+   "clip": "data/exhibits/P_heroes2_0",
+   "labs": [
+    {
+     "label": "PLAY PATTY MELT'S HEROES",
+     "url": "https://anderspartnersck.github.io/PATTYMELT/3d/heroes.html"
+    }
+   ],
+   "frames": 13
+  },
+  "P_diner1_0": {
+   "id": "P_diner1_0",
+   "node": "food_court",
+   "cab": "diner1",
+   "title": "PATTY MELT (1-up, the Diner)",
+   "game": "PATTY MELT",
+   "pitch": "You cook — but you can't serve. Billy runs the plates, and only when you holler (HEY BILLY!), which costs you a burger. Carry the kid through the rush, keep the doors open.",
+   "controls": "◄ ► move · SPACE/F flip · C cheese · X toast · B HEY BILLY · P pause",
+   "launch": [],
+   "clip": "data/exhibits/P_diner1_0",
+   "labs": [
+    {
+     "label": "PLAY PATTY MELT — THE DINER",
+     "url": "https://anderspartnersck.github.io/PATTYMELT/3d/"
+    }
+   ],
+   "frames": 13
+  },
+  "P_popup1_0": {
+   "id": "P_popup1_0",
+   "node": "food_court",
+   "cab": "popup1",
+   "title": "PATTY'S POP-UP (1-up)",
+   "game": "PATTY MELT",
+   "pitch": "You cook — but you can't serve. Billy runs the plates, and only when you holler (HEY BILLY!), which costs you a burger. Carry the kid through the rush, keep the doors open.",
+   "controls": "◄ ► move · SPACE/F flip · C cheese · X toast · B HEY BILLY · P pause",
+   "launch": [],
+   "clip": "data/exhibits/P_popup1_0",
+   "labs": [
+    {
+     "label": "PLAY PATTY MELT",
+     "url": "https://anderspartnersck.github.io/PATTYMELT/"
+    }
+   ],
+   "frames": 13
+  },
+  "C1_pax_1": {
+   "id": "C1_pax_1",
+   "node": "palace_mid",
+   "cab": "pax",
+   "title": "PAX GNOMANIA — CLASSICAL",
+   "game": "HADRIAN · PAX GNOMANIA",
+   "pitch": "SUCK UP in Roman armor — the Ornithopter Corps GRAPPLEs livestock over the legion.",
+   "controls": "A/D/E/C move · W GRAPPLE · S JINK · SPACE coin · ESC quit",
+   "launch": [],
+   "clip": "data/exhibits/C1_pax_1",
+   "labs": [
+    {
+     "label": "PLAY PAX GNOMANIA",
+     "url": "https://anderspartnersck.github.io/PAXGNOMANIA/"
+    }
+   ],
+   "frames": 13
+  },
+  "W_merc_0": {
+   "id": "W_merc_0",
+   "node": "window_area",
+   "cab": "merc",
+   "title": "MERC ZEBRA",
+   "game": "MERC ZEBRA",
+   "pitch": "May-Gray Valley delivery driver — KEEP MOVING, shake the cops, every customer complains.",
+   "controls": "the car AUTO-ROLLS forward (KEEP MOVING) · ◄ ► steer · ↑/Z gas · ↓/X brake to slow · SHIFT lay low = stop/hide + SURVEY (camera pulls out to scout the route) · SPACE ride (pickup/drop) · H horn",
+   "launch": [],
+   "clip": "data/exhibits/W_merc_0",
+   "labs": [
+    {
+     "label": "PLAY MERC ZEBRA",
+     "url": "https://anderspartnersck.github.io/MERCZEBRA/"
+    },
+    {
+     "label": "MERC ZEBRA — 3D EDITION",
+     "url": "https://anderspartnersck.github.io/MERCZEBRA/3d.html"
+    }
+   ],
+   "frames": 13
+  },
+  "W_maygray_0": {
+   "id": "W_maygray_0",
+   "node": "window_area",
+   "cab": "maygray",
+   "title": "MERC ZEBRA — MAY GRAY",
+   "game": "MERC ZEBRA",
+   "pitch": "May-Gray Valley delivery driver — KEEP MOVING, shake the cops, every customer complains.",
+   "controls": "the car AUTO-ROLLS forward (KEEP MOVING) · ◄ ► steer · ↑/Z gas · ↓/X brake to slow · SHIFT lay low = stop/hide + SURVEY (camera pulls out to scout the route) · SPACE ride (pickup/drop) · H horn",
+   "launch": [],
+   "clip": "data/exhibits/W_maygray_0",
+   "labs": [
+    {
+     "label": "PLAY MERC ZEBRA — MAY GRAY",
+     "url": "https://anderspartnersck.github.io/MERCZEBRA/?cab=maygray"
+    },
+    {
+     "label": "MERC ZEBRA — 3D EDITION",
+     "url": "https://anderspartnersck.github.io/MERCZEBRA/3d.html"
+    }
+   ],
+   "frames": 13
+  },
+  "F_ht1up_0": {
+   "id": "F_ht1up_0",
+   "node": "onetimer_1up",
+   "cab": "ht1up",
+   "title": "ONE-TIMER: THE HIGH TABLE — 1-UP (HYSCORE)",
+   "game": "ONE TIMER: THE HIGH TABLE",
+   "pitch": "Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
+   "controls": "move = stick / mouse · GET BIG (team power) · TRAP (catch) · BLAST (fire it) · first to 7",
+   "launch": [],
+   "clip": "data/exhibits/F_ht1up_0",
+   "labs": [
+    {
+     "label": "PLAY THE HIGH TABLE",
+     "url": "https://anderspartnersck.github.io/high-table/"
+    },
+    {
+     "label": "HYSCORE 1UP · QUARTER-EATER",
+     "url": "https://anderspartnersck.github.io/high-table/?hyscore"
+    }
+   ],
+   "frames": 13
+  },
+  "ROOM_gateway_0": {
+   "id": "ROOM_gateway_0",
+   "node": "gateway",
+   "cab": null,
+   "title": "ER$N — HYSCORE GATEWAY EDITION",
+   "game": "ER$N — THE HOME GAME",
+   "pitch": "You can't win at fraud — Final Favor decides. Hot-seat SEC-collapse board game.",
+   "controls": null,
+   "launch": [],
+   "clip": null,
+   "labs": [
+    {
+     "label": "PLAY ER$N",
+     "url": "https://anderspartnersck.github.io/ERSN/"
+    }
+   ],
+   "frames": 0
+  },
+  "ROOM_gateway_1": {
+   "id": "ROOM_gateway_1",
+   "node": "gateway",
+   "cab": null,
+   "title": "OiL! — THE HOME GAME",
+   "game": "OIL! — THE HOME GAME",
+   "pitch": "Eat · Divide · Destroy — predatory-oil board game on the shared Anders engine.",
+   "controls": null,
+   "launch": [],
+   "clip": null,
+   "labs": [
+    {
+     "label": "PLAY OiL!",
+     "url": "https://anderspartnersck.github.io/OIL/"
+    }
+   ],
+   "frames": 0
+  },
+  "ROOM_gateway_2": {
+   "id": "ROOM_gateway_2",
+   "node": "gateway",
+   "cab": null,
+   "title": "THE STRAND ON GRAND",
+   "game": "THE STRAND ON GRAND",
+   "pitch": null,
+   "controls": null,
+   "launch": [],
+   "clip": null,
+   "labs": [],
+   "frames": 0
+  },
+  "ROOM_palace_mid_0": {
+   "id": "ROOM_palace_mid_0",
+   "node": "palace_mid",
+   "cab": null,
+   "title": "FOG AND FIRE: THE LUNAR PACT",
+   "game": "FOG AND FIRE",
+   "pitch": "Co-op mech action — pilots over machines, the hive says obey.",
+   "controls": null,
+   "launch": [],
+   "clip": null,
+   "labs": [
+    {
+     "label": "PLAY FOG AND FIRE",
+     "url": "https://anderspartnersck.github.io/FOG-FIRE/"
+    }
+   ],
+   "frames": 0
+  }
+ },
+ "rooms": {
+  "forest_welcome": {
+   "name": "HYSCORE FOREST — THE RULES",
+   "sub": "SUCK UP · pay attention, don't fall behind"
+  },
+  "forest_mid": {
+   "name": "HYSCORE FOREST",
+   "sub": "THE FOREST FLOOR · live, tilt, die · ⚡ HIGH TABLE LIVE — TEST BENCH"
+  },
+  "grove_mid": {
+   "name": "GNOME GROVE",
+   "sub": "THE KEEPERS OF HYSCORE · respect the tilt"
+  },
+  "food_counter": {
+   "name": "PATTY'S POP-UP",
+   "sub": "CASTLE GRILLSCREEN · we cook, you play"
+  },
+  "palace_mid": {
+   "name": "COLEMAN'S PALACE",
+   "sub": "THE GROVE WING · SPQR"
+  },
+  "gateway": {
+   "name": "HYSCORE GATEWAY",
+   "sub": "THE EXECUTIVE LOUNGE · double-check your career"
+  }
+ },
+ "edges": [
+  [
+   "lobby",
+   "lobby_n"
+  ],
+  [
+   "lobby_n",
+   "food_entry"
+  ],
+  [
+   "food_entry",
+   "food_court"
+  ],
+  [
+   "food_court",
+   "food_counter"
+  ],
+  [
+   "lobby_n",
+   "crossroads"
+  ],
+  [
+   "lobby_n",
+   "window_area"
+  ],
+  [
+   "food_entry",
+   "crossroads"
+  ],
+  [
+   "crossroads",
+   "blacklight"
+  ],
+  [
+   "blacklight",
+   "air_hockey"
+  ],
+  [
+   "air_hockey",
+   "ht_row"
+  ],
+  [
+   "ht_row",
+   "grove_entry"
+  ],
+  [
+   "air_hockey",
+   "grove_entry"
+  ],
+  [
+   "grove_entry",
+   "grove_mid"
+  ],
+  [
+   "crossroads",
+   "forest_entry"
+  ],
+  [
+   "forest_entry",
+   "forest_mid"
+  ],
+  [
+   "forest_mid",
+   "forest_welcome"
+  ],
+  [
+   "crossroads",
+   "palace_entry"
+  ],
+  [
+   "palace_entry",
+   "palace_mid"
+  ],
+  [
+   "forest_mid",
+   "palace_mid"
+  ],
+  [
+   "palace_mid",
+   "palace_trasimene"
+  ],
+  [
+   "palace_mid",
+   "hallway"
+  ],
+  [
+   "hallway",
+   "hallway_mid"
+  ],
+  [
+   "hallway_mid",
+   "gateway"
+  ],
+  [
+   "forest_mid",
+   "onetimer_1up"
+  ]
+ ],
+ "cuts": [
+  [
+   "door",
+   "lobby",
+   "intro"
+  ]
+ ],
+ "zones": [
+  {
+   "area": "MAIN FLOOR",
+   "label": "MAIN FLOOR",
+   "rect": [
+    -19.0,
+    -3.45,
+    0.0,
+    17.0
+   ]
+  },
+  {
+   "area": "LOBBY",
+   "label": "LOBBY",
+   "rect": [
+    -19.0,
+    -3.45,
+    -8.0,
+    0.0
+   ]
+  },
+  {
+   "area": "MERC ZEBRA ROW",
+   "label": "ZEBRA ROW",
+   "rect": [
+    -12.0,
+    -3.45,
+    0.0,
+    9.0
+   ],
+   "small": true
+  },
+  {
+   "area": "PATTY'S POP-UP",
+   "label": "FOOD COURT",
+   "rect": [
+    -30.5,
+    -19.0,
+    -8.0,
+    5.0
+   ]
+  },
+  {
+   "area": "BLACKLIGHT AREA",
+   "label": "BLACKLIGHT",
+   "rect": [
+    -30.5,
+    -19.0,
+    5.0,
+    17.0
+   ]
+  },
+  {
+   "area": "GNOME GROVE",
+   "label": "GNOME GROVE",
+   "rect": [
+    -44.0,
+    -30.5,
+    -8.0,
+    20.0
+   ]
+  },
+  {
+   "area": "HYSCORE FOREST",
+   "label": "HYSCORE FOREST",
+   "rect": [
+    -30.5,
+    -15.0,
+    17.0,
+    30.0
+   ]
+  },
+  {
+   "area": "COLEMAN'S PALACE",
+   "label": "COLEMAN'S PALACE",
+   "rect": [
+    -15.0,
+    -3.45,
+    17.0,
+    30.0
+   ]
+  },
+  {
+   "area": "THE HALLWAY",
+   "label": "HALL",
+   "rect": [
+    -5.4,
+    -3.6,
+    30.0,
+    46.0
+   ],
+   "small": true
+  },
+  {
+   "area": "HYSCORE GATEWAY",
+   "label": "HYSCORE GATEWAY",
+   "rect": [
+    -12.5,
+    3.5,
+    46.0,
+    60.0
+   ]
+  }
+ ],
+ "note": "positions in metres (hall floor z=0, +y north).",
+ "clips": {
+  "data/clips/air_hockey__blacklight": 9,
+  "data/clips/air_hockey__grove_entry": 19,
+  "data/clips/air_hockey__ht_row": 11,
+  "data/clips/blacklight__air_hockey": 9,
+  "data/clips/blacklight__crossroads": 15,
+  "data/clips/crossroads__blacklight": 15,
+  "data/clips/crossroads__food_entry": 19,
+  "data/clips/crossroads__forest_entry": 19,
+  "data/clips/crossroads__lobby_n": 19,
+  "data/clips/crossroads__palace_entry": 19,
+  "data/clips/cut_intro": 73,
+  "data/clips/food_counter__food_court": 14,
+  "data/clips/food_court__food_counter": 14,
+  "data/clips/food_court__food_entry": 12,
+  "data/clips/food_entry__crossroads": 19,
+  "data/clips/food_entry__food_court": 12,
+  "data/clips/food_entry__lobby_n": 12,
+  "data/clips/forest_entry__crossroads": 19,
+  "data/clips/forest_entry__forest_mid": 17,
+  "data/clips/forest_mid__forest_entry": 17,
+  "data/clips/forest_mid__forest_welcome": 14,
+  "data/clips/forest_mid__onetimer_1up": 9,
+  "data/clips/forest_mid__palace_mid": 19,
+  "data/clips/forest_welcome__forest_mid": 14,
+  "data/clips/gateway__hallway_mid": 19,
+  "data/clips/grove_entry__air_hockey": 19,
+  "data/clips/grove_entry__grove_mid": 12,
+  "data/clips/grove_entry__ht_row": 16,
+  "data/clips/grove_mid__grove_entry": 12,
+  "data/clips/hallway__hallway_mid": 19,
+  "data/clips/hallway__palace_mid": 19,
+  "data/clips/hallway_mid__gateway": 19,
+  "data/clips/hallway_mid__hallway": 19,
+  "data/clips/ht_row__air_hockey": 11,
+  "data/clips/ht_row__grove_entry": 16,
+  "data/clips/lobby__lobby_n": 11,
+  "data/clips/lobby_n__crossroads": 19,
+  "data/clips/lobby_n__food_entry": 12,
+  "data/clips/lobby_n__lobby": 11,
+  "data/clips/lobby_n__window_area": 15,
+  "data/clips/onetimer_1up__forest_mid": 9,
+  "data/clips/palace_entry__crossroads": 19,
+  "data/clips/palace_entry__palace_mid": 15,
+  "data/clips/palace_mid__forest_mid": 19,
+  "data/clips/palace_mid__hallway": 19,
+  "data/clips/palace_mid__palace_entry": 15,
+  "data/clips/palace_mid__palace_trasimene": 9,
+  "data/clips/palace_trasimene__palace_mid": 9,
+  "data/clips/window_area__lobby_n": 15,
+  "data/exhibits/AH_nachos": 13,
+  "data/exhibits/AH_rivalry": 13,
+  "data/exhibits/B2_suckup_0": 13,
+  "data/exhibits/B_hightable_0": 13,
+  "data/exhibits/B_hivemind_0": 13,
+  "data/exhibits/B_ht1up_0": 13,
+  "data/exhibits/C1_pax_1": 13,
+  "data/exhibits/F1_merc_0": 13,
+  "data/exhibits/FI_meanstreets_0": 13,
+  "data/exhibits/FI_suckup_0": 13,
+  "data/exhibits/FJ_maygray_0": 13,
+  "data/exhibits/FJ_merc_0": 13,
+  "data/exhibits/G2_pax_0": 13,
+  "data/exhibits/G2_welsh_0": 13,
+  "data/exhibits/P_diner1_0": 13,
+  "data/exhibits/P_heroes2_0": 13,
+  "data/exhibits/P_popup1_0": 13,
+  "data/exhibits/P_popup2_0": 13,
+  "data/exhibits/F_ht1up_0": 13,
+  "data/exhibits/W_maygray_0": 13,
+  "data/exhibits/W_merc_0": 13
+ }
+}
