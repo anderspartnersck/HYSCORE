@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<link rel="icon" href="data:,">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>GNOME PUSHER · HYSCORE</title>
+<meta name="description" content="GNOME PUSHER: the HYSCORE gnome-grove coin pusher. Aim the drop, time the mushroom gate, push coins, win tickets and gnomes.">
+<style>
+  html,body{margin:0;height:100%;background:#05030a;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+  canvas{display:block;width:100vw;height:100vh;cursor:crosshair}
+  #back{position:fixed;left:14px;top:12px;color:#c9a3ff;font:700 12px/1 "Helvetica Neue",Arial,sans-serif;letter-spacing:.2em;text-decoration:none;text-shadow:0 0 8px #b36bff;opacity:.85}
+  #load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#b36bff;font:700 14px "Helvetica Neue",Arial;letter-spacing:.3em;text-shadow:0 0 10px #b36bff}
+</style>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<a id="back" href="../index.html">◂ HYSCORE</a>
+<div id="load">BLACKLIGHT WARMING…</div>
+<script type="module">
+import { THREE, makeRenderer, loadGLB, byName, fixMaterials, LED, placard, Sound, backLink } from './lib/view.js';
+import { createPusher, drop, step, addCredits, GP, pfAt, gateAt } from './lib/pusher.js';
+
+const Q = new URLSearchParams(location.search);
+const SEED = +(Q.get('seed') || (Date.now() % 1e9));
+backLink(document.getElementById('back'));
+
+// logic (x, depth-from-lip y, tier, layer) -> world (glTF: front = +Z)
+const LY = -0.30, DECK = 0.916, SHELF = 0.976, CT = 0.0028, RAIL_Y = 0.976 + 0.312, DROPZ = -(LY + GP.DROP_Y);
+const wz = (y) => -(LY + y);
+const wy = (tier, layer) => (tier ? SHELF : DECK) + CT / 2 + layer * CT + 0.0004;
+
+const canvas = document.getElementById('c'), R = makeRenderer(canvas), scene = new THREE.Scene();
+scene.background = new THREE.Color(0x04020a); scene.fog = new THREE.Fog(0x04020a, 3.5, 8);
+const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 30);
+const snd = new Sound();
+
+// the grove's blacklight: UV-violet wash, the glowing confetti carpet, a warm work-light over the coins
+const cv = document.createElement('canvas'); cv.width = cv.height = 512; const g2 = cv.getContext('2d');
+g2.fillStyle = '#07040f'; g2.fillRect(0, 0, 512, 512);
+for (let i = 0; i < 900; i++) { g2.fillStyle = ['#b36bff', '#53ff8a', '#ff3fb4', '#ffc440', '#40c8ff'][i % 5]; g2.globalAlpha = Math.random() * 0.8; g2.beginPath(); g2.arc(Math.random() * 512, Math.random() * 512, Math.random() * 2 + 0.5, 0, 7); g2.fill(); }
+const ct = new THREE.CanvasTexture(cv); ct.wrapS = ct.wrapT = THREE.RepeatWrapping; ct.repeat.set(6, 6); ct.colorSpace = THREE.SRGBColorSpace;
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshStandardMaterial({ map: ct, emissiveMap: ct, emissive: 0xffffff, emissiveIntensity: 0.35, roughness: 0.95 }));
+floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+scene.add(new THREE.HemisphereLight(0x7a4cff, 0x0a0418, 0.7));
+const uv = new THREE.PointLight(0x8a4dff, 6, 5); uv.position.set(0.8, 2.4, 1.6); scene.add(uv);
+const work = new THREE.SpotLight(0xffe2b0, 7, 2.2, 0.7, 0.5, 1.2); work.position.set(0, 1.52, -0.1); work.target.position.set(0, DECK, 0.1);
+work.castShadow = true; work.shadow.mapSize.set(1024, 1024); work.shadow.bias = -0.0005; scene.add(work, work.target);
+const front = new THREE.DirectionalLight(0xd8c8ff, 0.5); front.position.set(0.5, 2, 3); scene.add(front);
+
+let N, S, ledC, ledT, coinIM, coinGeo, coinMat, gnomeProto, ready = false, aimX = 0, carX = 0, bonusFlash = 0, bonusName = '';
+const gnomes = new Map(), fx = [], trayCoins = [], won = [];
+const MAXC = 1100;
+
+async function boot() {
+  const [cab, coin, gn] = await Promise.all([loadGLB('assets/gnome_pusher.glb'), loadGLB('assets/coin.glb'), loadGLB('assets/prize_gnome.glb')]);
+  scene.add(cab); fixMaterials(cab, { cast: false, emissive: 1.2 }); N = byName(cab);
+  N.pusher_lo && N.pusher_lo.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  let cm = null; coin.traverse((o) => { if (o.isMesh && !cm) cm = o; });
+  coinGeo = cm.geometry.clone();
+  coinGeo.computeBoundingBox(); const cc = coinGeo.boundingBox.getCenter(new THREE.Vector3()); coinGeo.translate(-cc.x, -cc.y, -cc.z);
+  coinMat = new THREE.MeshStandardMaterial({ color: 0xe8be50, metalness: 0.95, roughness: 0.32, emissive: 0x2a1800, emissiveIntensity: 0.6 });
+  coinIM = new THREE.InstancedMesh(coinGeo, coinMat, MAXC); coinIM.castShadow = true; coinIM.receiveShadow = true; coinIM.frustumCulled = false; scene.add(coinIM);
+  gn.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
+  const gb = new THREE.Box3().setFromObject(gn); gnomeProto = gn; gnomeProto.userData.y0 = -gb.min.y;
+  ledC = new LED(N.led_credits, { color: '#53ff8a', bg: '#03120a' }); ledT = new LED(N.led_tickets, { color: '#ffc440', bg: '#140c02' });
+  // the printed card by the coin slot
+  const card = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.13), new THREE.MeshStandardMaterial({ map: placard(['AIM  ·  MOUSE / ARROWS / TAP', 'DROP  ·  CLICK / SPACE', 'THROUGH THE MUSHROOM = GNOME BONUS'], { title: 'GNOME PUSHER', accent: '#7a2bd8', bg: '#efe3ff' }), roughness: 0.7, emissive: 0x302040, emissiveIntensity: 0.4 }));
+  card.position.set(-0.18, 0.74, 0.482); scene.add(card);
+  // ticket tape (grows as it prints; click it to tear it off)
+  const tc = document.createElement('canvas'); tc.width = 64; tc.height = 128; const tg = tc.getContext('2d');
+  tg.fillStyle = '#f7a62a'; tg.fillRect(0, 0, 64, 128); tg.fillStyle = '#5a2b00'; tg.font = '700 13px "DIN Condensed",Arial'; tg.textAlign = 'center';
+  tg.save(); tg.translate(32, 64); tg.rotate(-Math.PI / 2); tg.fillText('HYSCORE · 1 TICKET', 0, 4); tg.restore();
+  tg.fillStyle = '#fff8'; for (let x = 4; x < 64; x += 8) tg.fillRect(x, 0, 4, 2);
+  const tt = new THREE.CanvasTexture(tc); tt.wrapT = THREE.RepeatWrapping; tt.colorSpace = THREE.SRGBColorSpace;
+  tape = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 1), new THREE.MeshStandardMaterial({ map: tt, roughness: 0.8, side: THREE.DoubleSide }));
+  tape.geometry.translate(0, -0.5, 0); tape.position.set(0.28, 0.82, 0.486); tape.scale.y = 0.0001; scene.add(tape);
+  // the gnome prize shelf beside the cab
+  const sh = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.025, 0.24), new THREE.MeshStandardMaterial({ color: 0x24123a, roughness: 0.6, emissive: 0x12061e }));
+  sh.position.set(-0.75, 1.0, 0.1); scene.add(sh);
+  S = createPusher(SEED);
+  ready = true; document.getElementById('load').remove(); resize();
+}
+let tape = null, tapeTickets = 0, banked = 0;
+
+function gnomeObj(o) {
+  let g = gnomes.get(o.id);
+  if (!g) { g = gnomeProto.clone(); g.rotation.y = o.yaw; scene.add(g); gnomes.set(o.id, g); }
+  return g;
+}
+
+// ---------------------------------------------------------------- input: point to aim the drop, click / tap / space to drop
+const keys = new Set(), ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+const railPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -DROPZ);
+function aimFrom(e) {
+  ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
+  const p = new THREE.Vector3(); if (ray.ray.intersectPlane(railPlane, p)) aimX = Math.max(-GP.W / 2 + 0.02, Math.min(GP.W / 2 - 0.02, p.x));
+}
+function screenOf(obj) { const v = obj.getWorldPosition(new THREE.Vector3()).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }
+function onSlot(e) { const o = N.coin_slot || N.coin_plate; if (!o) return false; const [x, y] = screenOf(o); return Math.hypot(x - e.clientX, y - e.clientY) < Math.max(40, innerWidth / 20); }
+function onTape(e) { if (!tape || tape.scale.y < 0.02) return false; ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera); return ray.intersectObject(tape).length > 0; }
+function feed() {
+  snd.wake();
+  if (S.credits <= 0) return;
+  if (drop(S, carX)) snd.coin();
+}
+function buy() { snd.wake(); addCredits(S, 25); snd.tickets(8); }
+canvas.addEventListener('pointermove', (e) => { if (ready) aimFrom(e); });
+canvas.addEventListener('pointerdown', (e) => {
+  if (!ready) return; snd.wake();
+  if (onSlot(e)) { if (S.credits <= 0) buy(); else feed(); return; }
+  if (onTape(e)) { banked += tapeTickets; tapeTickets = 0; snd.noise(0.15, 0.3, 0, 1500); return; }
+  aimFrom(e);
+  if (e.pointerType !== 'mouse') carX = aimX;                       // a tap drops right where you touched
+  if (S.credits <= 0) { buy(); return; }
+  feed();
+});
+addEventListener('keydown', (e) => {
+  if (!ready) return; snd.wake(); const k = e.key.toLowerCase(); keys.add(k);
+  if (k === ' ' || k === 'enter') { e.preventDefault(); if (S.credits <= 0) { if (!e.repeat) buy(); } else feed(); }
+  if (k === 'c' && !e.repeat) buy();
+  if (k === 'm' && !e.repeat) snd.on = !snd.on;
+  if (k === 'escape') document.getElementById('back').click();
+  if (k.startsWith('arrow')) e.preventDefault();
+});
+addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
+
+function resize() { R.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize);
+
+// ---------------------------------------------------------------- the loop
+const M = new THREE.Matrix4(), P = new THREE.Vector3(), Qt = new THREE.Quaternion(), E = new THREE.Euler(), ONE = new THREE.Vector3(1, 1, 1);
+let last = performance.now();
+function loop(now) {
+  requestAnimationFrame(loop);
+  const dt = Math.min(0.25, (now - last) / 1000); last = now;   // slow frames still play at real speed (the logic steps fixed ticks)
+  if (!ready) return;
+  if (keys.has('arrowleft') || keys.has('a')) aimX = Math.max(-GP.W / 2 + 0.02, aimX - dt * 0.35);
+  if (keys.has('arrowright') || keys.has('d')) aimX = Math.min(GP.W / 2 - 0.02, aimX + dt * 0.35);
+  carX += (aimX - carX) * Math.min(1, dt * 14);
+  step(S, dt);
+  let wins = 0;
+  for (const e of S.events) {
+    if (e.type === 'win') {
+      wins++;
+      fx.push({ kind: e.kind, t: 0, x: e.x, y: wy(0, e.layer), z: wz(0), vz: 0.5 + Math.random() * 0.2, vx: (Math.random() - 0.5) * 0.15, vy: 0.05, to: 'tray', id: e.id });
+      if (e.kind === 'gnome') { snd.fanfare(); bonusFlash = 2.5; bonusName = 'GNOME WON +' + GP.GNOME_TICKETS; }
+      tapeTickets += e.kind === 'gnome' ? GP.GNOME_TICKETS : GP.COIN_TICKETS;
+    } else if (e.type === 'lost') {
+      fx.push({ kind: e.kind, t: 0, x: e.x, y: wy(0, e.layer), z: wz(e.y), vx: Math.sign(e.x) * 0.25, vz: 0.05, vy: 0, to: 'gutter', id: e.id });
+    } else if (e.type === 'bonus') { snd.bonus(); bonusFlash = 2.2; bonusName = e.name; }
+    else if (e.type === 'land') snd.clink(0.06);
+    else if (e.type === 'shelf') snd.clink(0.04);
+  }
+  if (wins) { snd.tickets(wins); for (let i = 0; i < Math.min(wins, 6); i++) setTimeout(() => snd.clink(0.15), i * 50); }
+  S.events.length = 0;
+  // moving parts
+  N.pusher_lo.position.z = wz(S.pf); N.pusher_face && (N.pusher_face.position.z = wz(S.pf));
+  N.bonus_gate && (N.bonus_gate.position.x = S.gx);
+  if (N.bonus_gate) N.bonus_gate.traverse((o) => { if (o.isMesh && o.material.emissive) o.material.emissiveIntensity = 1 + (bonusFlash > 0 ? 3 * Math.abs(Math.sin(now / 90)) : 0); });
+  N.drop_carriage && (N.drop_carriage.position.x = carX);
+  // coins: one instanced mesh (tilting at the lip: the near-miss), gnomes as figurines
+  let n = 0;
+  const seen = new Set();
+  for (const o of S.items) {
+    if (o.kind === 'gnome') {
+      const g = gnomeObj(o); seen.add(o.id);
+      g.position.set(o.x, wy(o.tier, 0) - CT / 2 + gnomeProto.userData.y0, wz(o.y));
+      const over = Math.max(0, GP.GR * 0.5 - o.y); g.rotation.x = o.tier === 0 ? over * 6 : 0;
+      continue;
+    }
+    if (n >= MAXC) break;
+    let tilt = 0;
+    if (o.tier === 0 && o.y < GP.R * 0.7) tilt = Math.min(0.5, (GP.R * 0.7 - o.y) / GP.R * 0.6);
+    if (o.tier === 0 && o.y > GP.GUT * 0 && Math.abs(o.x) > GP.W / 2 - GP.R * 0.7 && o.y < GP.GUT) E.set(0, o.yaw, -Math.sign(o.x) * 0.25); else E.set(tilt, o.yaw, 0);
+    Qt.setFromEuler(E); P.set(o.x, wy(o.tier, o.layer) - tilt * 0.004, wz(o.y)); M.compose(P, Qt, ONE); coinIM.setMatrixAt(n++, M);
+  }
+  for (const p of S.pending) {                                     // coins in the air: rail -> past the gate -> shelf
+    if (S.t < p.t0 || n >= MAXC) continue;
+    const k = Math.min(1, (S.t + S.acc - p.t0) / GP.FALL_T);
+    E.set(k * 9, 0, 0); Qt.setFromEuler(E);
+    if (p.kind === 'gnome') continue;
+    P.set(p.x, RAIL_Y + (SHELF - RAIL_Y) * k * k, DROPZ + 0.01); M.compose(P, Qt, ONE); coinIM.setMatrixAt(n++, M);
+  }
+  for (let i = fx.length - 1; i >= 0; i--) {                       // over the lip into the tray / off into the gutter
+    const f = fx[i]; f.t += dt; f.vy -= 9.8 * dt; f.x += f.vx * dt; f.y += f.vy * dt; f.z += f.vz * dt;
+    const floorY = f.to === 'tray' ? 0.668 : 0.86;
+    if (f.to === 'tray') f.z = Math.min(f.z, 0.56);
+    if (f.y <= floorY || f.t > 1.2) {
+      fx.splice(i, 1);
+      if (f.to === 'tray' && f.kind === 'coin') { trayCoins.push({ x: Math.max(-0.27, Math.min(0.27, f.x)), z: 0.50 + Math.random() * 0.07, yaw: Math.random() * 6, t: now }); snd.clink(0.08); }
+      if (f.to === 'tray' && f.kind === 'gnome') { const g = gnomes.get(f.id); if (g) { gnomes.delete(f.id); won.push(g); const k = won.length - 1; g.position.set(-0.93 + (k % 5) * 0.09, 1.0125 + gnomeProto.userData.y0, 0.02 + Math.floor(k / 5) * 0.09); g.rotation.set(0, 0.3, 0); } }
+      if (f.to === 'gutter' && f.kind === 'gnome') { const g = gnomes.get(f.id); if (g) { scene.remove(g); gnomes.delete(f.id); } }
+      continue;
+    }
+    if (f.kind === 'coin' && n < MAXC) { E.set(f.t * 12, 0, f.t * 5); Qt.setFromEuler(E); P.set(f.x, f.y, f.z); M.compose(P, Qt, ONE); coinIM.setMatrixAt(n++, M); }
+    else if (f.kind === 'gnome') { const g = gnomes.get(f.id); if (g) { seen.add(f.id); g.position.set(f.x, f.y, f.z); g.rotation.x += dt * 4; } }
+  }
+  for (let i = trayCoins.length - 1; i >= 0; i--) {                // the tray empties into the ticket counter
+    const c = trayCoins[i];
+    if (now - c.t > 6000 || trayCoins.length > 70) { trayCoins.splice(i, 1); continue; }
+    if (n < MAXC) { E.set(0, c.yaw, 0); Qt.setFromEuler(E); P.set(c.x, 0.6614 + 0.0014, c.z); M.compose(P, Qt, ONE); coinIM.setMatrixAt(n++, M); }
+  }
+  for (const [id, g] of gnomes) if (!seen.has(id)) { scene.remove(g); gnomes.delete(id); }
+  coinIM.count = n; coinIM.instanceMatrix.needsUpdate = true;
+  // tape prints out (1.6 cm per ticket, curls onto the floor past ~0.6 m)
+  const want = Math.min(0.78, tapeTickets * 0.016); tape.scale.y += (Math.max(0.0001, want) - tape.scale.y) * Math.min(1, dt * 3);
+  tape.material.map.repeat.set(1, Math.max(1, tape.scale.y / 0.016 / 8)); tape.visible = tape.scale.y > 0.002;
+  // the machine's LEDs
+  bonusFlash = Math.max(0, bonusFlash - dt);
+  if (bonusFlash > 0) ledC.set(bonusName, '', Math.floor(now / 140) % 2 === 0);
+  else if (S.credits <= 0) ledC.set('INSERT', 'COIN', Math.floor(now / 500) % 2 === 0);
+  else ledC.set('TOKENS ' + S.credits, S.gnomesWon ? 'GNOMES ' + S.gnomesWon : '');
+  ledT.set(String(S.tickets).padStart(4, '0'), banked ? 'BANKED ' + banked : 'TICKETS');
+  // camera: a player leaning over the glass; it follows your aim a touch
+  // eye over the front glass, looking down the deck to the back wall; phones (narrow) step back to fit the width
+  const narrow = Math.max(0, 0.9 / camera.aspect - 0.62);
+  const tgt = new THREE.Vector3(carX * 0.15, 0.97, 0.0);
+  camera.position.set(carX * 0.25, 1.52 + narrow * 0.55, 0.92 + narrow * 0.9); camera.lookAt(tgt);
+  R.render(scene, camera);
+}
+requestAnimationFrame(loop);
+boot().catch((e) => { document.getElementById('load').textContent = 'OUT OF ORDER · ' + e.message; console.error(e); });
+window.__pusher = () => S;                     // headless check hook
+</script>
+</body>
+</html>

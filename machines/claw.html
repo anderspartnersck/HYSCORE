@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<link rel="icon" href="data:,">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>HYSCORE Claw</title>
+<meta name="description" content="A HYSCORE claw machine: steer the gantry, let the claw stop swinging, drop it, and hope the grip holds to the chute.">
+<style>
+  html,body{margin:0;height:100%;background:#05030a;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+  canvas{display:block;width:100vw;height:100vh;cursor:grab}
+  #back{position:fixed;left:14px;top:12px;color:#c9a3ff;font:700 12px/1 "Helvetica Neue",Arial,sans-serif;letter-spacing:.2em;text-decoration:none;text-shadow:0 0 8px #b36bff;opacity:.85}
+  #load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#b36bff;font:700 14px "Helvetica Neue",Arial;letter-spacing:.3em;text-shadow:0 0 10px #b36bff}
+</style>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<a id="back" href="../index.html">◂ HYSCORE</a>
+<div id="load">LIGHTING UP…</div>
+<script type="module">
+import { THREE, makeRenderer, loadGLB, byName, fixMaterials, plushify, LED, placard, Sound, frame, backLink } from './lib/view.js';
+import { createClaw, insert, joystick, dropClaw, step, addCredits, head, CW, PLUSH, TYPES, MACHINES } from './lib/claw.js';
+
+const Q = new URLSearchParams(location.search);
+const KIND = ({ sheep: 'sheep', cow: 'cow', crab: 'crab' })[Q.get('m')] || 'sheep';
+const SEED = +(Q.get('seed') || (Date.now() % 1e9));
+const TINT = { sheep: 0xffb0e0, cow: 0xffffff, crab: 0xa8d0ff }[KIND];
+const LEDCOL = { sheep: ['#ff2a3a', '#1a0406'], cow: ['#9dff3a', '#071204'], crab: ['#39b6ff', '#03101c'] }[KIND];
+document.title = MACHINES[KIND].name + ' · HYSCORE';
+backLink(document.getElementById('back'));
+
+const B = 0.8;                                 // the pit floor (logic y = 0) in world metres
+const canvas = document.getElementById('c'), R = makeRenderer(canvas), scene = new THREE.Scene();
+scene.background = new THREE.Color(0x05030a); scene.fog = new THREE.Fog(0x05030a, 4, 9);
+const camera = new THREE.PerspectiveCamera(38, 1, 0.05, 30);
+const snd = new Sound();
+
+// the arcade around it: carpet, dim fill, the cab's own interior lamp casting the claw's shadow on the heap
+const cv = document.createElement('canvas'); cv.width = cv.height = 512; const g2 = cv.getContext('2d');
+g2.fillStyle = '#0b0714'; g2.fillRect(0, 0, 512, 512);
+for (let i = 0; i < 700; i++) { g2.fillStyle = ['#b36bff', '#53ff8a', '#ff3fb4', '#ffc440', '#40c8ff'][i % 5]; g2.globalAlpha = Math.random() * 0.7; g2.fillRect(Math.random() * 512, Math.random() * 512, 2, 2); }
+const ct = new THREE.CanvasTexture(cv); ct.wrapS = ct.wrapT = THREE.RepeatWrapping; ct.repeat.set(6, 6); ct.colorSpace = THREE.SRGBColorSpace;
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshStandardMaterial({ map: ct, roughness: 0.95 }));
+floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+scene.add(new THREE.HemisphereLight(0x8070b0, 0x100818, 0.55));
+const key = new THREE.DirectionalLight(0xffe8d8, 1.1); key.position.set(1.5, 3, 3); scene.add(key);
+const rim = new THREE.PointLight(LEDCOL[0], 3, 4); rim.position.set(-1.2, 2.2, 0.6); scene.add(rim);
+const lamp = new THREE.SpotLight(0xfff4ea, 9, 2.4, 0.95, 0.45, 1.2); lamp.position.set(0, 1.82, 0.05); lamp.target.position.set(0, B, 0);
+lamp.castShadow = true; lamp.shadow.mapSize.set(1024, 1024); lamp.shadow.bias = -0.0008; lamp.shadow.camera.near = 0.2; scene.add(lamp, lamp.target);
+
+let N, S, led, ledT, prongs = [], ready = false; const PROTO = {};
+const objs = new Map(), falling = [], shelf = [];
+const shelfG = new THREE.Group(); scene.add(shelfG);
+
+async function boot() {
+  const tl = new THREE.TextureLoader(), tex = (u) => new Promise((r, j) => tl.load(u, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; r(t); }, undefined, j));
+  const [cab, pl, gn, tPatty, tPuck, tDeed] = await Promise.all([loadGLB(`assets/claw_${KIND}.glb`), loadGLB(`assets/plush_${KIND}.glb`), loadGLB('assets/prize_gnome.glb'),
+    tex('assets/prize_patty.webp'), tex('assets/prize_puck.webp'), tex('assets/prize_deed.webp')]);
+  scene.add(cab); fixMaterials(cab, { cast: false, emissive: 1.4 }); N = byName(cab);
+  for (const k of ['claw_head', 'claw_cable', 'gantry_carriage', 'gantry_bridge', 'claw_prong0', 'claw_prong1', 'claw_prong2', 'joy_stick', 'joy_ball'])
+    N[k] && N[k].traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  // the machine's own plush: fit its length to the logic body (its spheres; a little squish: plush heaps press into each other)
+  const bb = new THREE.Box3().setFromObject(pl), sz = bb.getSize(new THREE.Vector3());   // measured before the eye halos join
+  plushify(pl, TINT);
+  { // each prize visual is built about its logic frame (lib/claw.js TYPES: the spheres' origin); the logic centroid
+    // = origin + q * off, so the page places origin = centroid - q * off
+    const T = TYPES[KIND], len = 2 * Math.max(...T.parts.map((q) => Math.abs(q[0]) + q[3])) * 1.04, k = len / Math.max(sz.x, sz.z), c = bb.getCenter(new THREE.Vector3());
+    pl.scale.setScalar(k); pl.position.set(-c.x * k, -c.y * k - 0.004, -c.z * k);
+    const turn = new THREE.Group(); turn.add(pl); if (sz.z > sz.x) turn.rotation.y = Math.PI / 2;   // its long axis along the logic's x
+    const g = new THREE.Group(); g.add(turn); PROTO[KIND] = g;
+  }
+  { const b2 = new THREE.Box3().setFromObject(gn), k = 0.119 / (b2.max.y - b2.min.y); gn.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    gn.scale.setScalar(k); gn.position.y = -0.038 - b2.min.y * k; const g = new THREE.Group(); g.add(gn); PROTO.gnome = g; }
+  { // PATTY MELT pillow: a puffed box, printed both faces
+    const [w, h, d] = TYPES.patty.size, geo = new THREE.BoxGeometry(w * 0.96, h * 0.94, d, 10, 12, 2), P = geo.attributes.position;
+    for (let i = 0; i < P.count; i++) { const x = P.getX(i) / (w * 0.48), y = P.getY(i) / (h * 0.47); const f = Math.sqrt(Math.max(0, 1 - x * x * x * x)) * Math.sqrt(Math.max(0, 1 - y * y * y * y)); P.setZ(i, P.getZ(i) * (0.25 + 0.75 * f)); }
+    geo.computeVertexNormals();
+    const fab = (map) => new THREE.MeshPhysicalMaterial({ map, color: map ? 0xffffff : 0xf0e2c4, roughness: 1, sheen: 1, sheenRoughness: 0.5, sheenColor: new THREE.Color(0xffe0d0).multiplyScalar(0.4), specularIntensity: 0.05 });
+    const side = fab(null), m = new THREE.Mesh(geo, [side, side, side, side, fab(tPatty), fab(tPatty)]); m.castShadow = m.receiveShadow = true;
+    const g = new THREE.Group(); g.add(m); PROTO.patty = g;
+  }
+  { // HIGH TABLE puck: the BEES face top and bottom, the yellow rim
+    const [w, h] = TYPES.puck.size, face = new THREE.MeshStandardMaterial({ map: tPuck, roughness: 0.35, metalness: 0.1 });
+    const rim = new THREE.MeshStandardMaterial({ color: 0xe8d400, emissive: 0x3a3000, roughness: 0.4 });
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(w / 2, w / 2, h, 40), [rim, face, face]); m.castShadow = m.receiveShadow = true;
+    const g = new THREE.Group(); g.add(m); PROTO.puck = g;
+  }
+  { // ER$N DEED plaque: the certificate on a lacquered wood block (deeds, never cash)
+    const [w, h, d] = TYPES.deed.size, wood = new THREE.MeshStandardMaterial({ color: 0x6a3a1a, roughness: 0.45, metalness: 0.05 });
+    const top = new THREE.MeshStandardMaterial({ map: tDeed, roughness: 0.5 }), gold = new THREE.MeshStandardMaterial({ color: 0xc9a040, roughness: 0.3, metalness: 0.8 });
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [wood, wood, top, gold, wood, wood]); m.castShadow = m.receiveShadow = true;
+    const g = new THREE.Group(); g.add(m); PROTO.deed = g;
+  }
+  led = new LED(N.led_credits, { color: LEDCOL[0], bg: LEDCOL[1] }); ledT = new LED(N.led_timer, { color: LEDCOL[0], bg: LEDCOL[1] });
+  // the prongs: remember each one's rest pose relative to the hub, so it can swing open about its hinge
+  const hub = N.claw_head; hub.updateWorldMatrix(true, true);
+  for (let k = 0; k < 3; k++) {
+    const p = N['claw_prong' + k]; if (!p) continue;
+    const rel = p.position.clone().sub(hub.position), radial = new THREE.Vector3(rel.x, 0, rel.z).normalize();
+    const axis = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), radial).normalize();
+    prongs.push({ p, rel, axis, q0: p.quaternion.clone(), sign: 1 });
+  }
+  // which way is "open" for each prong: the tip must swing outward
+  for (const pr of prongs) {
+    const tipL = new THREE.Vector3(0.004, -0.115, 0);   // a point near the tip, prong-local (approx.)
+    const t0 = tipL.clone().applyQuaternion(pr.q0), t1 = tipL.clone().applyQuaternion(new THREE.Quaternion().setFromAxisAngle(pr.axis, 0.4).multiply(pr.q0));
+    const out = (v) => v.x * pr.rel.x + v.z * pr.rel.z;
+    pr.sign = out(t1) > out(t0) ? 1 : -1;
+  }
+  // the instruction card on the deck (printed, the machine's own)
+  const card = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.1), new THREE.MeshStandardMaterial({ map: placard(['MOVE  ·  ARROWS / DRAG', 'DROP  ·  SPACE / RED BUTTON', 'TOKEN  ·  C / THE SLOT', 'LET IT STOP SWINGING'], { title: 'HOW TO PLAY', accent: LEDCOL[0] }), roughness: 0.7 }));
+  card.position.set(0.0, B + 0.062, 0.46 + 0.05); card.rotation.x = -Math.PI / 2; scene.add(card);
+  // the prize list under the glass: what is in THIS machine (the machine's own printed card)
+  const names = MACHINES[KIND].mix.map(([t]) => TYPES[t].name);
+  const card2 = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.1), new THREE.MeshStandardMaterial({ map: placard(names.slice(0, 5), { title: 'PRIZES', accent: LEDCOL[0] }), roughness: 0.7 }));
+  card2.position.set(0.28, B + 0.062, 0.51); card2.rotation.x = -Math.PI / 2; scene.add(card2);
+  // prize shelf beside the cab
+  const sh = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.03, 0.35), new THREE.MeshStandardMaterial({ color: 0x2a1a10, roughness: 0.6 }));
+  sh.position.set(0.95, 1.05, 0); sh.receiveShadow = true; scene.add(sh);
+  const shLight = new THREE.PointLight(0xffd8a0, 1.5, 1.5); shLight.position.set(0.95, 1.6, 0.4); scene.add(shLight);
+  S = createClaw(KIND, SEED);
+  ready = true; document.getElementById('load').remove(); resize();
+}
+
+function prizeObj(it) {
+  let o = objs.get(it.id);
+  if (!o) { o = PROTO[it.type].clone(); scene.add(o); objs.set(it.id, o); }
+  return o;
+}
+const QV = new THREE.Quaternion(), OFF = new THREE.Vector3();
+function place(o, c, q, off) {           // logic pose (centroid c, quaternion [w,x,y,z], off) -> the visual's origin
+  QV.set(q[1], q[2], q[3], q[0]); OFF.set(off[0], off[1], off[2]).applyQuaternion(QV);
+  o.position.set(c[0] - OFF.x, B + c[1] - OFF.y, c[2] - OFF.z); o.quaternion.copy(QV);
+}
+
+// ---------------------------------------------------------------- input: drag = the stick, tap the red button / the slot
+const joy = [0, 0], keys = new Set(); let drag = null, peek = 0, peekT = 0;
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+function screenOf(obj) { const v = obj.getWorldPosition(new THREE.Vector3()).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }
+function near(obj, x, y, px) { if (!obj) return false; const [sx, sy] = screenOf(obj); return Math.hypot(sx - x, sy - y) < px; }
+function coin() {
+  snd.wake();
+  if (S.phase !== 'idle') return;
+  if (S.credits <= 0) { addCredits(S, 10); snd.tickets(6); return; }
+  if (insert(S)) snd.coin();
+}
+function press() {
+  snd.wake(); N.btn_drop && (N.btn_drop.userData.down = 0.18);
+  if (S.phase === 'idle') coin(); else dropClaw(S);
+}
+canvas.addEventListener('pointerdown', (e) => {
+  if (!ready) return; snd.wake(); canvas.setPointerCapture(e.pointerId);
+  const big = Math.max(44, innerWidth / 18);
+  if (near(N.btn_drop, e.clientX, e.clientY, big)) { press(); return; }
+  if (near(N.coin_slot, e.clientX, e.clientY, big)) { coin(); return; }
+  drag = { x: e.clientX, y: e.clientY, t: e.timeStamp, moved: false };   // event time: a tap stays a tap on a slow frame
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y, k = Math.max(36, innerWidth / 22);
+  if (Math.hypot(dx, dy) > 8) drag.moved = true;
+  joy[0] = Math.max(-1, Math.min(1, dx / k)); joy[1] = Math.max(-1, Math.min(1, dy / k));
+});
+const endDrag = (e) => {
+  if (drag && !drag.moved && e.timeStamp - drag.t < 500 && S.phase === 'idle') coin();
+  drag = null; joy[0] = joy[1] = 0;
+};
+canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
+addEventListener('keydown', (e) => {
+  if (!ready) return; snd.wake();
+  const k = e.key.toLowerCase(); keys.add(k);
+  if (k === ' ' || k === 'enter') { e.preventDefault(); if (!e.repeat) press(); }
+  if (k === 'c' && !e.repeat) coin();
+  if (k === 'v' && !e.repeat) peek = peek ? 0 : 1;
+  if (k === 'm' && !e.repeat) snd.on = !snd.on;
+  if (k === 'escape') document.getElementById('back').click();
+  if (k.startsWith('arrow')) e.preventDefault();
+});
+addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
+
+// ---------------------------------------------------------------- the loop
+function resize() {
+  R.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize);
+
+let last = performance.now(), flash = 0, doorT = 0, lastWin = '';
+const TILT = new THREE.Quaternion(), DOWN = new THREE.Vector3(0, -1, 0);
+function frameLoop(now) {
+  requestAnimationFrame(frameLoop);
+  const dt = Math.min(0.25, (now - last) / 1000); last = now;   // slow frames still play at real speed (the logic steps fixed ticks)
+  if (!ready) return;
+  // the stick: keys + drag
+  let jx = joy[0], jz = joy[1];
+  if (keys.has('arrowleft') || keys.has('a')) jx = -1; if (keys.has('arrowright') || keys.has('d')) jx = 1;
+  if (keys.has('arrowup') || keys.has('w')) jz = -1; if (keys.has('arrowdown') || keys.has('s')) jz = 1;
+  joystick(S, jx, jz);
+  step(S, dt);
+  for (const e of S.events) {
+    if (e.type === 'drop') snd.clack();
+    else if (e.type === 'touch') snd.clack();
+    else if (e.type === 'grab') snd.clack();
+    else if (e.type === 'slip' || e.type === 'release') setTimeout(() => snd.thud(), 260);
+    else if (e.type === 'miss') snd.tone(180, 0.3, 'sawtooth', 0.08, 0, 0.6);
+    else if (e.type === 'weak') snd.tone(90, 0.25, 'sawtooth', 0.05, 0, 0.7);        // the claw goes limp at the top
+    else if (e.type === 'win') {
+      snd.fanfare(); flash = 3; lastWin = e.name;
+      const o = objs.get(e.id); if (o) { objs.delete(e.id); falling.push({ o, t: 0, vy: -0.6, y: o.position.y }); }
+    }
+  }
+  S.events.length = 0;
+  const moving = (S.phase === 'steer' && (jx || jz) && Math.abs(S.gx) < CW.GX && Math.abs(S.gz) < CW.GX) || S.phase === 'down' || S.phase === 'up' || S.phase === 'home';
+  snd.motor(moving);
+  // gantry + claw
+  const RZ = N.gantry_bridge.userData.y0 ??= N.gantry_bridge.position.y;
+  N.gantry_bridge.position.z = S.gz;
+  N.gantry_carriage.position.x = S.gx; N.gantry_carriage.position.z = S.gz;
+  const hubY = B + S.hy, H = head(S);
+  const cTop = N.claw_cable.userData.y0 ??= N.claw_cable.position.y;
+  const cdir = new THREE.Vector3(H[0] - S.gx, hubY - cTop, H[2] - S.gz), clen = cdir.length(); cdir.normalize();
+  TILT.setFromUnitVectors(DOWN, cdir);                                    // the cable swings: the claw hangs off its end
+  N.claw_cable.position.set(S.gx, cTop, S.gz); N.claw_cable.scale.y = Math.max(0.01, clen - 0.001); N.claw_cable.quaternion.copy(TILT);
+  N.claw_head.position.set(H[0], hubY, H[2]); N.claw_head.quaternion.copy(TILT);
+  const ang = -0.12 + 0.62 * S.open;
+  for (const pr of prongs) {
+    const r = pr.rel.clone().applyQuaternion(TILT);
+    pr.p.position.set(H[0] + r.x, hubY + r.y, H[2] + r.z);
+    pr.p.quaternion.copy(TILT).multiply(new THREE.Quaternion().setFromAxisAngle(pr.axis, ang * pr.sign)).multiply(pr.q0);
+  }
+  // the stick tilts with you; the ball rides its top
+  const js = N.joy_stick, jb = N.joy_ball;
+  if (js) {
+    js.rotation.set(jz * 0.32, 0, -jx * 0.32);
+    const top = new THREE.Vector3(0, 0.1125, 0).applyEuler(js.rotation).add(js.position); jb.position.copy(top);
+  }
+  if (N.btn_drop) { const u = N.btn_drop.userData; u.y0 ??= N.btn_drop.position.y; u.down = Math.max(0, (u.down || 0) - dt); N.btn_drop.position.y = u.y0 - (u.down > 0 ? 0.006 : 0); }
+  // the prizes: every one is a rigid body in the logic (tumbles, stacks, settles); the held one rides the claw
+  for (const it of S.items) place(prizeObj(it), it.c, it.q, it.off);
+  for (let i = falling.length - 1; i >= 0; i--) {                       // down the chute shaft, out the prize door, onto the shelf
+    const f = falling[i]; f.t += dt;
+    if (f.y > B + CW.TRAY + 0.04) { f.vy -= 9.8 * dt; f.y = Math.max(B + CW.TRAY + 0.04, f.y + f.vy * dt); f.o.position.y = f.y; f.o.rotateX(dt * 4); }
+    else { if (!f.out) { f.out = true; doorT = 1.2; snd.thud(); } f.o.position.z = Math.min(0.62, f.o.position.z + dt * 0.5); f.o.position.x += (-0.27 - f.o.position.x) * Math.min(1, dt * 6); }
+    if (f.t > 2.4) {
+      falling.splice(i, 1); const n = shelf.length; shelf.push(f.o);
+      f.o.position.set(0.7 + (n % 5) * 0.12, 1.066 + 0.05, -0.08 + Math.floor(n / 5) * 0.13); f.o.quaternion.identity(); f.o.rotation.set(0, -0.6 + (n % 3) * 0.3, 0);
+      if (shelf.length > 15) scene.remove(shelf.shift());
+    }
+  }
+  if (N.prize_door) { doorT = Math.max(0, doorT - dt); N.prize_door.rotation.x = doorT > 0 ? -0.9 * Math.min(1, doorT * 2) : 0; }
+  // LEDs: the machine's own panels
+  flash = Math.max(0, flash - dt);
+  if (flash > 0) led.set('WINNER', lastWin, Math.floor(now / 160) % 2 === 0);
+  else if (S.credits <= 0 && S.phase === 'idle') led.set('INSERT', 'TOKEN', Math.floor(now / 500) % 2 === 0);
+  else led.set('TOKENS ' + S.credits, S.wins ? 'WON ' + S.wins : '');
+  ledT.set(S.phase === 'steer' ? String(Math.ceil(S.timer)).padStart(2, '0') : S.phase === 'idle' ? '--' : 'GO', S.phase === 'steer' && S.timer < 5 ? 'HURRY' : '');
+  // camera: in front of the glass at eye height, a gentle follow; V = lean to the side to judge depth
+  peekT += ((peek ? 1 : 0) - peekT) * Math.min(1, dt * 4);
+  const tgt = new THREE.Vector3(S.gx * 0.15, 1.4, S.gz * 0.1);           // deck .. marquee (0.75 .. 2.1 m) fills the view
+  const dist = frame(camera, tgt, 1.0, 1.36, 1.02) + 0.46;
+  const a = peekT * 0.75 + (S.phase === 'steer' ? 0 : 0);
+  camera.position.set(tgt.x + Math.sin(a) * dist, 1.55 + peekT * 0.1, Math.cos(a) * dist);
+  camera.lookAt(tgt);
+  R.render(scene, camera);
+}
+requestAnimationFrame(frameLoop);
+boot().catch((e) => { document.getElementById('load').textContent = 'OUT OF ORDER · ' + e.message; console.error(e); });
+window.__claw = () => S;                       // headless check hooks
+window.__btnScreen = () => (N && N.btn_drop ? screenOf(N.btn_drop) : null);
+window.__slotScreen = () => (N && N.coin_slot ? screenOf(N.coin_slot) : null);
+</script>
+</body>
+</html>

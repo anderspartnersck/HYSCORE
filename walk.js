@@ -14,7 +14,8 @@ const cache = new Map();            // url -> Image (decoded)
 
 function img(url) {
   if (cache.has(url)) return cache.get(url);
-  const p = new Promise((res, rej) => { const i = new Image(); i.decoding = 'async'; i.onload = () => res(i); i.onerror = rej; i.src = url; });
+  const p = new Promise((res, rej) => { const i = new Image(); i.decoding = 'async'; i.onload = () => { LOADED.add(url); res(i); }; i.onerror = rej; i.src = url; });
+  p.catch(() => cache.delete(url));            // a dropped request is retried next time, never a stuck rejection
   cache.set(url, p); return p;
 }
 function frames(base, n) { const out = []; for (let i = 0; i < n; i++) out.push(`${base}/${String(i).padStart(3, '0')}.webp`); return out; }
@@ -57,10 +58,11 @@ function draw() {
   const c = $('gl'), a = c.width / c.height;
   gl.uniform1f(U.yaw, YAW * RAD); gl.uniform1f(U.pitch, PITCH * RAD); gl.uniform1f(U.tx, tanH()); gl.uniform1f(U.ty, tanH() / a);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); placeHots();
+  if (window.LIVE) LIVE.place(NODE, project, BUSY);      // 1119: the pop-up's live window rides the panorama
 }
 
 // ------------------------------------------------------------------ hotspots
-function project(yaw, pitch) {         // world direction -> screen fraction (or null if behind)
+function project(yaw, pitch, free) {   // world direction -> screen fraction (or null if behind; free = no off-screen cut)
   const y = yaw * RAD, p = pitch * RAD, cy = YAW * RAD, cp = PITCH * RAD;
   const d = [Math.sin(y) * Math.cos(p), Math.cos(y) * Math.cos(p), Math.sin(p)];
   const f = [Math.sin(cy) * Math.cos(cp), Math.cos(cy) * Math.cos(cp), Math.sin(cp)];
@@ -68,39 +70,81 @@ function project(yaw, pitch) {         // world direction -> screen fraction (or
   const dz = d[0] * f[0] + d[1] * f[1] + d[2] * f[2]; if (dz < 0.15) return null;
   const c = $('gl'), a = c.clientWidth / c.clientHeight;
   const x = (d[0] * r[0] + d[1] * r[1]) / dz / tanH(), yy = (d[0] * u[0] + d[1] * u[1] + d[2] * u[2]) / dz / (tanH() / a);
-  if (Math.abs(x) > 1.1 || Math.abs(yy) > 1.1) return null;
+  if (!free && (Math.abs(x) > 1.1 || Math.abs(yy) > 1.1)) return null;
   return [(x + 1) / 2, (1 - yy) / 2];
+}
+// 1119 (Joe: "streamline the clickable waypoints to the rooms"): the walk rings are the node's `nav` (tools/walk_nav.py):
+// one labelled ring per neighbouring ROOM (one click walks every clip of the way, back to back) + small rings for the
+// same room's stops. The raw per-edge rings only show for a level packed before nav existed.
+const AREA_COL = { 'LOBBY': '#ff3fb4', 'MERC ZEBRA ROW': '#ff3fb4', 'MAIN FLOOR': '#c99bff', "PATTY'S POP-UP": '#ff8a3d', 'BLACKLIGHT AREA': '#a06bff',
+                   'GNOME GROVE': '#d27bff', 'HYSCORE FOREST': '#53ff8a', "COLEMAN'S PALACE": '#f0b04c', 'THE HALLWAY': '#e8c066', 'HYSCORE GATEWAY': '#e8c066' };
+function navRings() {
+  if (NODE.nav && NODE.nav.length) return NODE.nav.map((r) => Object.assign({}, r, { kind: 'walk', navKind: r.kind }));
+  return NODE.hotspots.filter((h) => h.kind === 'walk');
 }
 function buildHots() {
   const h = $('hots'); h.innerHTML = '';
   if (!NODE) return;
-  for (const hs of NODE.hotspots) {
+  const list = navRings().concat(NODE.hotspots.filter((x) => x.kind !== 'walk'));
+  for (const hs of list) {
     if (hs.hidden) continue;
-    const el = document.createElement('div'); el.className = 'hot ' + hs.kind;
-    const icon = hs.kind === 'inspect' ? '◎' : (hs.kind === 'cut' ? '✦' : (hs.pitch > 5 ? '⇡' : (hs.pitch < -5 && Math.abs(hs.pitch) > 25 ? '⇣' : '➜')));
+    const el = document.createElement('div'); el.className = 'hot ' + hs.kind + (hs.navKind ? ' ' + hs.navKind : '');
+    const icon = hs.kind === 'inspect' ? '◎' : (hs.kind === 'cut' ? '✦' : (hs.pitch > 5 ? '⇡' : (hs.pitch < -5 && Math.abs(hs.pitch) > 25 ? '⇣' : '▲')));
     const lab = hs.kind === 'inspect' ? (LEVEL.exhibits[hs.exhibit] || {}).title : (hs.label || (LEVEL.nodes[hs.to] || {}).area || '');
-    el.innerHTML = `<div class="ring">${icon}</div><div class="lab">${lab || ''}</div>`;
+    const col = AREA_COL[hs.area || (LEVEL.nodes[hs.to] || {}).area] || '';
+    if (col && hs.kind === 'walk') el.style.setProperty('--c', col);
+    el.innerHTML = `<div class="ring"><span class="g">${icon}</span></div><div class="lab"><b>${esc(lab || '')}</b>${hs.sub ? `<i>${esc(hs.sub)}</i>` : ''}</div>`;
     el.onclick = (e) => { e.stopPropagation(); act(hs); };
-    el._hs = hs; el._icon = icon; el._i = h.children.length % 5; h.appendChild(el);
+    el._hs = hs; el._icon = icon; h.appendChild(el);
   }
   placeHots();
 }
+function hotPitch(hs) { return hs.kind === 'inspect' ? hs.pitch : (hs.kind === 'walk' && Math.abs(hs.pitch) < 5 ? -18 : hs.pitch); }
 function placeHots() {
-  for (const el of $('hots').children) {
-    const hs = el._hs; const s = project(hs.yaw, hs.kind === 'inspect' ? hs.pitch : (hs.kind === 'walk' && Math.abs(hs.pitch) < 5 ? -18 : hs.pitch));
+  const els = [...$('hots').children], parked = { l: [], r: [], b: [] }, shown = [];
+  for (const el of els) {
+    const hs = el._hs; el.classList.remove('flip', 'nolab');
     if (BUSY) { el.style.display = 'none'; continue; }
-    el.classList.toggle('edge', !s);
-    if (!s) {   // off-screen: park it at the edge it lies toward, so every way on is always findable
-      const d = angDiff(YAW, hs.yaw);
-      if (Math.abs(d) > 150) {   // behind you: a "turn back" ring at the bottom centre
-        el.style.display = ''; el.style.left = (50 + ((el._i || 0) - 2) * 7) + '%'; el.style.top = '90%';
-        el.querySelector('.ring').textContent = '⌄'; continue;
-      }
-      el.style.display = ''; el.style.left = (d < 0 ? 4 : 96) + '%'; el.style.top = (50 + (el._i || 0) * 9) + '%';
-      el.querySelector('.ring').textContent = d < 0 ? '‹' : '›'; continue;
+    const s = project(hs.yaw, hotPitch(hs));
+    el.classList.toggle('edge', !s); el.style.display = '';
+    if (s) { el.querySelector('.g').textContent = el._icon; el.style.left = (s[0] * 100) + '%'; el.style.top = (s[1] * 100) + '%'; shown.push(el); continue; }
+    // off-screen: park it at the edge it lies toward, so every way on is always findable (inspect rings stay in the room)
+    if (hs.kind === 'inspect') { el.style.display = 'none'; continue; }
+    const d = angDiff(YAW, hs.yaw);
+    (Math.abs(d) > 150 ? parked.b : d < 0 ? parked.l : parked.r).push([Math.abs(d), el]);
+  }
+  for (const [side, arr] of Object.entries(parked)) {        // each edge in turn order, nearest first
+    arr.sort((a, b) => a[0] - b[0]);
+    arr.forEach(([, el], i) => {
+      if (side === 'b') { el.style.left = (50 + (i - (arr.length - 1) / 2) * 24) + '%'; el.style.top = '86%'; el.querySelector('.g').textContent = '▼'; }
+      else { el.style.left = (side === 'l' ? 5 : 95) + '%'; el.style.top = (28 + i * 16) + '%'; el.querySelector('.g').textContent = side === 'l' ? '◀' : '▶'; }
+      shown.push(el);
+    });
+  }
+  declutter(shown);
+}
+// nothing sits on top of anything: rooms place first, then stops, then exhibits. A ring that would land on a placed
+// ring / label steps up or down until it is clear; its label goes below, else above, else hides until hovered.
+function declutter(els) {
+  const rank = (el) => (el._hs.kind === 'walk' ? (el._hs.navKind === 'spot' ? 1 : 0) : 2) + (el.classList.contains('edge') ? 0.5 : 0);
+  els.sort((a, b) => rank(a) - rank(b));
+  const F = $('hots').getBoundingClientRect(), placed = [];
+  const hit = (r) => placed.some((q) => r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top);
+  const pad = (r, p) => ({ left: r.left - p, right: r.right + p, top: r.top - p, bottom: r.bottom + p });
+  for (const el of els) {
+    const ring = el.querySelector('.ring'), top0 = parseFloat(el.style.top) / 100 * F.height;
+    const step = ring.getBoundingClientRect().height + 8;
+    let r = pad(ring.getBoundingClientRect(), 3);
+    for (let k = 1; hit(r) && k <= 8; k++) {        // 0, +1, -1, +2, -2 ... ring heights, kept on the frame
+      const off = (k % 2 ? 1 : -1) * Math.ceil(k / 2) * step, y = top0 + off;
+      if (y < 20 || y > F.height - 20) continue;
+      el.style.top = (y / F.height * 100) + '%'; r = pad(ring.getBoundingClientRect(), 3);
     }
-    el.querySelector('.ring').textContent = el._icon;
-    el.style.display = ''; el.style.left = (s[0] * 100) + '%'; el.style.top = (s[1] * 100) + '%';
+    placed.push(r);
+    const lab = el.querySelector('.lab'); if (!lab.textContent) continue;
+    let lr = lab.getBoundingClientRect();
+    if (hit(lr)) { el.classList.add('flip'); lr = lab.getBoundingClientRect(); if (hit(lr)) { el.classList.remove('flip'); el.classList.add('nolab'); continue; } }
+    placed.push(lr);
   }
 }
 
@@ -125,28 +169,50 @@ async function playFrames(urls, reverse = false) {
   }
 }
 function hideClip() { $('clip').style.opacity = 0; }
-function clipFrames(path) { const n = (LEVEL.clips || {})[path]; return n ? frames(path, n) : null; }
+function clipFrames(path) { if (window.GW && GW.on) path = GW.clip(path); const n = (LEVEL.clips || {})[path]; return n ? frames(path, n) : null; }
+function panoOf(n) { return (window.GW && GW.on && GW.pano(n)) || n.pano; }     // 1119: the GATEWAY atrium shows its current variant (gateway.js)
 
 async function goNode(id, yaw = null, instant = false) {
   const n = LEVEL.nodes[id]; if (!n) return;
   $('load').textContent = 'loading…';
-  const im = await img(n.pano); setTexture(im); $('load').textContent = '';
-  NODE = n; YAW = yaw == null ? n.heading : yaw; PITCH = 0;
+  const im = await img(panoOf(n)); setTexture(im); $('load').textContent = '';
+  const prev = NODE; NODE = n; YAW = yaw == null ? n.heading : yaw; PITCH = n.pitch0 || 0;
   const room = (LEVEL.rooms || {})[id];
   $('area').textContent = room ? room.name : n.area; $('sub').textContent = room ? room.sub : '';
+  if (window.GW && GW.on) GW.arrive(n, prev);
   buildHots(); draw(); hideClip(); preload(n);
   try { history.replaceState(null, '', '#' + id); } catch (e) {}
 }
+const LOADED = new Set();         // urls whose image has decoded (so a passing-through panorama is used only if it is ready)
 function preload(n) {
+  // 1119: a room ring preloads its FIRST leg + where it lands; the later legs load the moment it is clicked
+  for (const r of n.nav || []) {
+    const last = LEVEL.nodes[r.route[r.route.length - 1].to]; if (last) img(panoOf(last));
+    const f = clipFrames(r.route[0].clip); if (f) f.forEach(img);
+  }
   for (const hs of n.hotspots) {
-    if (hs.to && LEVEL.nodes[hs.to]) img(LEVEL.nodes[hs.to].pano);
+    if (n.nav && n.nav.length && hs.kind === 'walk') continue;
+    if (hs.to && LEVEL.nodes[hs.to]) img(panoOf(LEVEL.nodes[hs.to]));
     const f = hs.clip && clipFrames(hs.clip); if (f) f.forEach(img);
   }
 }
 async function act(hs) {
-  if (BUSY) return; BUSY = true; placeHots(); $('card').style.display = 'none';
+  if (BUSY) return; BUSY = true; draw(); $('card').style.display = 'none';
   try {
-    if (hs.kind === 'walk' || hs.kind === 'cut') {
+    if (hs.route && hs.route.length) {     // 1119: a room ring walks its whole route, clip after clip, then lands
+      for (const leg of hs.route) { const f = clipFrames(leg.clip); if (f) f.forEach(img); if (LEVEL.nodes[leg.to]) img(panoOf(LEVEL.nodes[leg.to])); }
+      for (let i = 0; i < hs.route.length; i++) {
+        const leg = hs.route[i], f = clipFrames(leg.clip);
+        await turnTo(leg.yaw, 0, i ? 260 : 380);
+        if (f) await playFrames(f);
+        if (window.UI) UI.blip('step');
+        const mid = LEVEL.nodes[leg.to];
+        if (i < hs.route.length - 1 && mid && LOADED.has(panoOf(mid))) {   // passing through: its panorama for the turn (if it is in)
+          setTexture(await img(panoOf(mid))); YAW = leg.yaw; PITCH = 0; hideClip(); draw();
+        }
+      }
+      await goNode(hs.route[hs.route.length - 1].to, hs.route[hs.route.length - 1].yaw);
+    } else if (hs.kind === 'walk' || hs.kind === 'cut') {
       const f = clipFrames(hs.clip);
       if (hs.kind === 'walk') await turnTo(hs.yaw, 0);
       else await turnTo(LEVEL.nodes[NODE.id].heading, 0);
@@ -155,6 +221,7 @@ async function act(hs) {
       const end = hs.kind === 'cut' ? LEVEL.nodes[hs.to].heading : hs.yaw;
       await goNode(hs.to, end);
     } else if (hs.kind === 'inspect') {
+      if (window.GW && GW.on) await GW.inspect(hs);          // 1119: a game's table at the GATEWAY turns the atrium into its room
       const ex = LEVEL.exhibits[hs.exhibit]; const f = clipFrames(ex.clip);
       await turnTo(hs.yaw, 0);
       if (f) await playFrames(f);
@@ -211,7 +278,7 @@ async function playIntro() {
 }
 async function enterArcade() { await playIntro(); await goNode(LEVEL.start); }
 async function showPano(id, yaw) {          // attract: a node's panorama with no hotspots
-  const n = LEVEL.nodes[id]; if (!n) return; const im = await img(n.pano); setTexture(im);
+  const n = LEVEL.nodes[id]; if (!n) return; const im = await img(panoOf(n)); setTexture(im);
   NODE = null; YAW = yaw == null ? n.heading : yaw; PITCH = -2; $('hots').innerHTML = ''; hideClip(); draw();
 }
 function setView(yaw, pitch) { YAW = yaw; if (pitch != null) PITCH = pitch; draw(); }
@@ -221,6 +288,7 @@ window.WALK = { goNode, enterArcade, showPano, setView, draw, get LEVEL() { retu
 (async function boot() {
   resize();
   LEVEL = await (await fetch('data/level.json')).json(); HFOV = LEVEL.hfov || 75;
+  if (window.GW) await GW.init(LEVEL);          // 1119: the GATEWAY atrium's variants (data/gateway.json), if packed
   const start = (location.hash || '').slice(1);
   if (start && LEVEL.nodes[start]) { if (window.UI) UI.skipBoot(); await goNode(start); return; }
   if (window.UI) UI.boot(); else await enterArcade();
