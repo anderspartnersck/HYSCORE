@@ -108,13 +108,13 @@ export class LED {
 }
 
 /** a printed placard (instructions) as a canvas texture on a small plane */
-export function placard(lines, { w = 512, h = 256, bg = '#f2e6c8', ink = '#1a1012', title = '', accent = '#c8102e' } = {}) {
+export function placard(lines, { w = 512, h = 256, bg = '#f2e6c8', ink = '#1a1012', title = '', accent = '#c8102e', big = false } = {}) {
   const cv = document.createElement('canvas'); cv.width = w; cv.height = h; const g = cv.getContext('2d');
   g.fillStyle = bg; g.fillRect(0, 0, w, h); g.strokeStyle = ink; g.lineWidth = 6; g.strokeRect(8, 8, w - 16, h - 16);
-  let y = 46;
-  if (title) { g.fillStyle = accent; g.font = '700 40px "DIN Condensed","Arial Narrow",sans-serif'; g.textAlign = 'center'; g.fillText(title, w / 2, y); y += 40; }
-  g.fillStyle = ink; g.font = '600 26px "DIN Condensed","Arial Narrow",sans-serif'; g.textAlign = 'center';
-  for (const l of lines) { g.fillText(l, w / 2, y); y += 32; }
+  let y = big ? 50 : 46;
+  if (title) { g.fillStyle = accent; g.font = `700 ${big ? 46 : 40}px "DIN Condensed","Arial Narrow",sans-serif`; g.textAlign = 'center'; g.fillText(title, w / 2, y); y += big ? 44 : 40; }
+  g.fillStyle = ink; g.font = `${big ? 700 : 600} ${big ? 31 : 26}px "DIN Condensed","Arial Narrow",sans-serif`; g.textAlign = 'center';
+  for (const l of lines) { g.fillText(l, w / 2, y); y += big ? 41 : 32; }
   const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 
@@ -145,6 +145,12 @@ export class Sound {
   clack() { this.noise(0.04, 0.3, 0, 1200); this.tone(320, 0.05, 'square', 0.08); }
   fanfare() { [523, 659, 784, 1047, 784, 1047].forEach((f, i) => this.tone(f, 0.16, 'square', 0.12, i * 0.09)); }
   bonus() { for (let i = 0; i < 10; i++) this.tone(500 + i * 120, 0.08, 'square', 0.08, i * 0.05); }
+  // 1123 claw beats: the snap (a hard clunk + spring ring), then one rising tick per grip bar (the read of the grab)
+  snap() { this.noise(0.05, 0.4, 0, 900); this.tone(140, 0.12, 'square', 0.12, 0, 0.6); this.tone(1900, 0.09, 'triangle', 0.06, 0.02, 1.3); }
+  grip(bars) { for (let i = 0; i < bars; i++) this.tone(660 * Math.pow(1.26, i), 0.07, 'square', 0.07, 0.12 + i * 0.075); }
+  wah() { this.tone(330, 0.5, 'sawtooth', 0.07, 0, 0.45); this.tone(247, 0.6, 'sawtooth', 0.05, 0.18, 0.5); }
+  lamp(n) { this.tone(880 + n * 220, 0.09, 'square', 0.09); this.tone(1320 + n * 330, 0.12, 'triangle', 0.07, 0.06); }
+  chute() { this.noise(0.05, 0.25, 0, 600); [784, 988, 1175, 1568].forEach((f, i) => this.tone(f, 0.1, 'triangle', 0.09, 0.05 + i * 0.05)); }
   tickets(n) { for (let i = 0; i < Math.min(n, 12); i++) this.noise(0.02, 0.12, i * 0.06, 3500); }
   motor(on) {
     if (!this.ctx || !this.on) return;
@@ -173,4 +179,34 @@ export function backLink(el, fallback = '../index.html') {
     if (window.opener) { window.close(); return; }
     if (history.length > 1 && document.referrer) history.back(); else location.href = fallback;
   });
+}
+
+// ---------------------------------------------------------------- SMEAR FRAMES (Joe 1123): render-only, baked, cheap
+// A smear is 1-2 drawn frames on a single fast motion: a translucent GHOST of the part where it just was (built once,
+// its materials cloned once) and/or a stretch along the motion. No per-frame blur, no extra passes: the ghost is
+// hidden on every other frame.
+export function ghostOf(root, opacity = 0.38) {
+  const g = root.clone(true);
+  g.traverse((o) => {
+    if (!o.isMesh) return;
+    const one = (m) => { const c = m.clone(); c.transparent = true; c.opacity = opacity; c.depthWrite = false; return c; };
+    o.material = Array.isArray(o.material) ? o.material.map(one) : one(o.material);
+    o.castShadow = o.receiveShadow = false; o.renderOrder = 12; o.raycast = () => {};
+  });
+  g.visible = false; g.userData.op = opacity;
+  return g;
+}
+/** show a ghost for `frames` rendered frames at the pose it is given now (then it fades and hides itself) */
+export class Smear {
+  constructor(ghost) { this.g = ghost; this.n = 0; this.N = 0; }
+  fire(pos, quat, scale, frames = 2) {
+    const g = this.g; if (pos) g.position.copy(pos); if (quat) g.quaternion.copy(quat); if (scale) g.scale.copy(scale);
+    this.n = this.N = frames; g.visible = true; this.fade();
+  }
+  fade() {
+    const k = this.N ? this.n / this.N : 0, op = this.g.userData.op * k;
+    this.g.traverse((o) => { if (o.isMesh) for (const m of Array.isArray(o.material) ? o.material : [o.material]) m.opacity = op; });
+  }
+  tick() { if (this.n > 0) { this.n--; if (this.n === 0) this.g.visible = false; else this.fade(); } return this.n; }
+  get on() { return this.n > 0; }
 }

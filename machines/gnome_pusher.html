@@ -19,11 +19,12 @@
 <a id="back" href="../index.html">◂ HYSCORE</a>
 <div id="load">BLACKLIGHT WARMING…</div>
 <script type="module">
-import { THREE, makeRenderer, loadGLB, byName, fixMaterials, LED, placard, Sound, backLink } from './lib/view.js';
+import { THREE, makeRenderer, loadGLB, byName, fixMaterials, LED, placard, Sound, backLink, ghostOf, Smear } from './lib/view.js';
 import { createPusher, drop, step, addCredits, GP, pfAt, gateAt } from './lib/pusher.js';
 
 const Q = new URLSearchParams(location.search);
 const SEED = +(Q.get('seed') || (Date.now() % 1e9));
+const STEP = Q.has('step');                    // test harness: frames advance only through window.__advance (fixed dt)
 backLink(document.getElementById('back'));
 
 // logic (x, depth-from-lip y, tier, layer) -> world (glTF: front = +Z)
@@ -130,12 +131,19 @@ function resize() { R.setSize(innerWidth, innerHeight, false); camera.aspect = i
 addEventListener('resize', resize);
 
 // ---------------------------------------------------------------- the loop
-const M = new THREE.Matrix4(), P = new THREE.Vector3(), Qt = new THREE.Quaternion(), E = new THREE.Euler(), ONE = new THREE.Vector3(1, 1, 1);
+const V3 = new THREE.Vector3(), M = new THREE.Matrix4(), P = new THREE.Vector3(), Qt = new THREE.Quaternion(), E = new THREE.Euler(), ONE = new THREE.Vector3(1, 1, 1);
 let last = performance.now();
+// LEDGE DROPS (1123, render-only): the logic moves a coin off the shelf in one tick; the page lets it fall the 6 cm
+// in DROP_T with a tumble, and its first 2 drawn frames are SMEAR frames (stretched down the fall, no blur pass)
+const DROP_T = 0.17, ledge = new Map(), gnomeFx = new Map();
+let lampN = 0, lampFlash = 0;
 function loop(now) {
   requestAnimationFrame(loop);
   const dt = Math.min(0.25, (now - last) / 1000); last = now;   // slow frames still play at real speed (the logic steps fixed ticks)
-  if (!ready) return;
+  if (!ready || STEP) return;
+  tickFrame(dt, now);
+}
+function tickFrame(dt, now, draw = true) {
   if (keys.has('arrowleft') || keys.has('a')) aimX = Math.max(-GP.W / 2 + 0.02, aimX - dt * 0.35);
   if (keys.has('arrowright') || keys.has('d')) aimX = Math.min(GP.W / 2 - 0.02, aimX + dt * 0.35);
   carX += (aimX - carX) * Math.min(1, dt * 14);
@@ -149,9 +157,10 @@ function loop(now) {
       tapeTickets += e.kind === 'gnome' ? GP.GNOME_TICKETS : GP.COIN_TICKETS;
     } else if (e.type === 'lost') {
       fx.push({ kind: e.kind, t: 0, x: e.x, y: wy(0, e.layer), z: wz(e.y), vx: Math.sign(e.x) * 0.25, vz: 0.05, vy: 0, to: 'gutter', id: e.id });
-    } else if (e.type === 'bonus') { snd.bonus(); bonusFlash = 2.2; bonusName = e.name; }
+    } else if (e.type === 'bonus') { snd.bonus(); bonusFlash = 2.2; bonusName = e.name; lampN = 0; }
+    else if (e.type === 'lamp') { snd.lamp(e.n); lampN = e.n; lampFlash = 0.9; }
     else if (e.type === 'land') snd.clink(0.06);
-    else if (e.type === 'shelf') snd.clink(0.04);
+    else if (e.type === 'shelf') { snd.clink(0.04); ledge.set(e.id, { t: 0, f: 0, spin: ((Math.abs(e.x) * 97) % 1) * 2 - 1 }); }
   }
   if (wins) { snd.tickets(wins); for (let i = 0; i < Math.min(wins, 6); i++) setTimeout(() => snd.clink(0.15), i * 50); }
   S.events.length = 0;
@@ -163,14 +172,27 @@ function loop(now) {
   // coins: one instanced mesh (tilting at the lip: the near-miss), gnomes as figurines
   let n = 0;
   const seen = new Set();
+  let smearing = 0;
+  const SM = new THREE.Vector3(1, 1, 2.3);
   for (const o of S.items) {
+    const ld = ledge.get(o.id); let fall = 0, k = 1;
+    if (ld) { k = Math.min(1, ld.t / DROP_T); fall = (SHELF - DECK) * (1 - k * k); }   // still dropping off the shelf edge
     if (o.kind === 'gnome') {
       const g = gnomeObj(o); seen.add(o.id);
-      g.position.set(o.x, wy(o.tier, 0) - CT / 2 + gnomeProto.userData.y0, wz(o.y));
-      const over = Math.max(0, GP.GR * 0.5 - o.y); g.rotation.x = o.tier === 0 ? over * 6 : 0;
+      g.position.set(o.x, wy(o.tier, 0) - CT / 2 + gnomeProto.userData.y0 + fall, wz(o.y));
+      const over = Math.max(0, GP.GR * 0.5 - o.y); g.rotation.x = o.tier === 0 ? over * 6 + (ld ? 0.5 * Math.sin(Math.PI * k) : 0) : 0;
+      if (ld && ld.f < 2) {                                         // SMEAR: a ghost gnome where it left the shelf
+        const gh = gnomeFx.get(o.id) || (() => { const x = new Smear(ghostOf(g, 0.4)); scene.add(x.g); gnomeFx.set(o.id, x); return x; })();
+        if (ld.f === 0) gh.fire(V3.set(g.position.x, g.position.y + fall * 0.5 + 0.03, g.position.z), g.quaternion, null, 2);
+      }
       continue;
     }
     if (n >= MAXC) break;
+    if (ld && k < 1) {                                              // the coin tumbles over the shelf edge
+      if (ld.f < 2) { E.set(1.25, o.yaw, 0); Qt.setFromEuler(E); P.set(o.x, wy(0, 0) + fall + 0.012, wz(o.y) + 0.004); M.compose(P, Qt, SM); smearing++; }   // SMEAR frame
+      else { E.set(1.4 * k + ld.spin * 0.3, o.yaw, ld.spin * 0.4 * k); Qt.setFromEuler(E); P.set(o.x, wy(0, o.layer) + fall, wz(o.y)); M.compose(P, Qt, ONE); }
+      coinIM.setMatrixAt(n++, M); continue;
+    }
     let tilt = 0;
     if (o.tier === 0 && o.y < GP.R * 0.7) tilt = Math.min(0.5, (GP.R * 0.7 - o.y) / GP.R * 0.6);
     if (o.tier === 0 && o.y > GP.GUT * 0 && Math.abs(o.x) > GP.W / 2 - GP.R * 0.7 && o.y < GP.GUT) E.set(0, o.yaw, -Math.sign(o.x) * 0.25); else E.set(tilt, o.yaw, 0);
@@ -190,12 +212,24 @@ function loop(now) {
     if (f.y <= floorY || f.t > 1.2) {
       fx.splice(i, 1);
       if (f.to === 'tray' && f.kind === 'coin') { trayCoins.push({ x: Math.max(-0.27, Math.min(0.27, f.x)), z: 0.50 + Math.random() * 0.07, yaw: Math.random() * 6, t: now }); snd.clink(0.08); }
-      if (f.to === 'tray' && f.kind === 'gnome') { const g = gnomes.get(f.id); if (g) { gnomes.delete(f.id); won.push(g); const k = won.length - 1; g.position.set(-0.93 + (k % 5) * 0.09, 1.0125 + gnomeProto.userData.y0, 0.02 + Math.floor(k / 5) * 0.09); g.rotation.set(0, 0.3, 0); } }
+      if (f.to === 'tray' && f.kind === 'gnome') { const g = gnomes.get(f.id); if (g) { g.scale.set(1, 1, 1); gnomes.delete(f.id); won.push(g); const k = won.length - 1; g.position.set(-0.93 + (k % 5) * 0.09, 1.0125 + gnomeProto.userData.y0, 0.02 + Math.floor(k / 5) * 0.09); g.rotation.set(0, 0.3, 0); } }
       if (f.to === 'gutter' && f.kind === 'gnome') { const g = gnomes.get(f.id); if (g) { scene.remove(g); gnomes.delete(f.id); } }
       continue;
     }
-    if (f.kind === 'coin' && n < MAXC) { E.set(f.t * 12, 0, f.t * 5); Qt.setFromEuler(E); P.set(f.x, f.y, f.z); M.compose(P, Qt, ONE); coinIM.setMatrixAt(n++, M); }
-    else if (f.kind === 'gnome') { const g = gnomes.get(f.id); if (g) { seen.add(f.id); g.position.set(f.x, f.y, f.z); g.rotation.x += dt * 4; } }
+    f.fr = (f.fr || 0) + 1;
+    if (f.kind === 'coin' && n < MAXC) {
+      if (f.fr <= 2 && f.to === 'tray') { E.set(0.9, 0, 0); Qt.setFromEuler(E); P.set(f.x, f.y - 0.006, f.z + 0.006); M.compose(P, Qt, SM); smearing++; }   // SMEAR: over the lip
+      else { E.set(f.t * 12, 0, f.t * 5); Qt.setFromEuler(E); P.set(f.x, f.y, f.z); M.compose(P, Qt, ONE); }
+      coinIM.setMatrixAt(n++, M);
+    }
+    else if (f.kind === 'gnome') {
+      const g = gnomes.get(f.id);
+      if (g) {
+        seen.add(f.id);
+        if (f.fr === 1) { const gh = gnomeFx.get(f.id) || (() => { const x = new Smear(ghostOf(g, 0.4)); scene.add(x.g); gnomeFx.set(f.id, x); return x; })(); gh.fire(g.position, g.quaternion, null, 2); }
+        g.position.set(f.x, f.y, f.z); g.rotation.x += dt * 4; g.scale.set(1, f.fr <= 2 ? 1.3 : 1, 1);
+      }
+    }
   }
   for (let i = trayCoins.length - 1; i >= 0; i--) {                // the tray empties into the ticket counter
     const c = trayCoins[i];
@@ -203,6 +237,7 @@ function loop(now) {
     if (n < MAXC) { E.set(0, c.yaw, 0); Qt.setFromEuler(E); P.set(c.x, 0.6614 + 0.0014, c.z); M.compose(P, Qt, ONE); coinIM.setMatrixAt(n++, M); }
   }
   for (const [id, g] of gnomes) if (!seen.has(id)) { scene.remove(g); gnomes.delete(id); }
+  for (const [id, ld] of ledge) { ld.t += dt; ld.f++; if (ld.t > DROP_T + 0.05) ledge.delete(id); }
   coinIM.count = n; coinIM.instanceMatrix.needsUpdate = true;
   // tape prints out (1.6 cm per ticket, curls onto the floor past ~0.6 m)
   const want = Math.min(0.78, tapeTickets * 0.016); tape.scale.y += (Math.max(0.0001, want) - tape.scale.y) * Math.min(1, dt * 3);
@@ -211,18 +246,28 @@ function loop(now) {
   bonusFlash = Math.max(0, bonusFlash - dt);
   if (bonusFlash > 0) ledC.set(bonusName, '', Math.floor(now / 140) % 2 === 0);
   else if (S.credits <= 0) ledC.set('INSERT', 'COIN', Math.floor(now / 500) % 2 === 0);
-  else ledC.set('TOKENS ' + S.credits, S.gnomesWon ? 'GNOMES ' + S.gnomesWon : '');
+  else ledC.set('TOKENS ' + S.credits, lampFlash > 0 || lampN ? 'MUSHROOM ' + '■'.repeat(lampN) + '□'.repeat(GP.LAMPS - lampN) : S.gnomesWon ? 'GNOMES ' + S.gnomesWon : 'HIT THE MUSHROOM');
+  lampFlash = Math.max(0, lampFlash - dt);
+  if (N.bonus_gate && lampFlash > 0 && bonusFlash <= 0) N.bonus_gate.traverse((o) => { if (o.isMesh && o.material.emissive) o.material.emissiveIntensity = 1 + 2.5 * lampFlash; });
   ledT.set(String(S.tickets).padStart(4, '0'), banked ? 'BANKED ' + banked : 'TICKETS');
   // camera: a player leaning over the glass; it follows your aim a touch
   // eye over the front glass, looking down the deck to the back wall; phones (narrow) step back to fit the width
   const narrow = Math.max(0, 0.9 / camera.aspect - 0.62);
   const tgt = new THREE.Vector3(carX * 0.15, 0.97, 0.0);
   camera.position.set(carX * 0.25, 1.52 + narrow * 0.55, 0.92 + narrow * 0.9); camera.lookAt(tgt);
-  R.render(scene, camera);
+  const smearNow = smearing > 0 || [...gnomeFx.values()].some((x) => x.on);
+  if (draw || smearNow) R.render(scene, camera);
+  let sm = smearing; for (const [id, x] of gnomeFx) { if (x.tick()) sm++; else if (!ledge.has(id) && !x.on) { scene.remove(x.g); gnomeFx.delete(id); } }
+  window.__smears = (window.__smears || 0) + (sm ? 1 : 0);
+  return smearNow;
 }
 requestAnimationFrame(loop);
+// the shot harness (?step): advance n frames of fixed dt, synchronously
+let simNow = 0;
+window.__advance = (n = 1, dt = 1 / 30, stopOnSmear = false) => { for (let i = 0; i < n; i++) { simNow += dt * 1000; const sm = tickFrame(dt, simNow, i === n - 1 || !stopOnSmear); if (stopOnSmear && sm) return { stop: i + 1, smear: true, v: S.t }; } return stopOnSmear ? { stop: n, smear: false, v: S.t } : S.t; };
 boot().catch((e) => { document.getElementById('load').textContent = 'OUT OF ORDER · ' + e.message; console.error(e); });
 window.__pusher = () => S;                     // headless check hook
+window.__pusherAPI = { drop, gateAt, GP };
 </script>
 </body>
 </html>

@@ -19,12 +19,14 @@
 <a id="back" href="../index.html">◂ HYSCORE</a>
 <div id="load">LIGHTING UP…</div>
 <script type="module">
-import { THREE, makeRenderer, loadGLB, byName, fixMaterials, plushify, LED, placard, Sound, frame, backLink } from './lib/view.js';
-import { createClaw, insert, joystick, dropClaw, step, addCredits, head, CW, PLUSH, TYPES, MACHINES } from './lib/claw.js';
+import { THREE, makeRenderer, loadGLB, byName, fixMaterials, plushify, LED, placard, Sound, frame, backLink, ghostOf, Smear } from './lib/view.js';
+import { createClaw, insert, joystick, dropClaw, step, addCredits, head, swing, aimPoint, CW, PLUSH, TYPES, MACHINES } from './lib/claw.js';
 
 const Q = new URLSearchParams(location.search);
 const KIND = ({ sheep: 'sheep', cow: 'cow', crab: 'crab' })[Q.get('m')] || 'sheep';
 const SEED = +(Q.get('seed') || (Date.now() % 1e9));
+const STEP = Q.has('step');
+const ZOOM = Q.has('zoom');                    // the shot harness: frame the pit, not the whole cab                    // test harness: frames advance only through window.__advance (fixed dt)
 const TINT = { sheep: 0xffb0e0, cow: 0xffffff, crab: 0xa8d0ff }[KIND];
 const LEDCOL = { sheep: ['#ff2a3a', '#1a0406'], cow: ['#9dff3a', '#071204'], crab: ['#39b6ff', '#03101c'] }[KIND];
 document.title = MACHINES[KIND].name + ' · HYSCORE';
@@ -49,7 +51,7 @@ const rim = new THREE.PointLight(LEDCOL[0], 3, 4); rim.position.set(-1.2, 2.2, 0
 const lamp = new THREE.SpotLight(0xfff4ea, 9, 2.4, 0.95, 0.45, 1.2); lamp.position.set(0, 1.82, 0.05); lamp.target.position.set(0, B, 0);
 lamp.castShadow = true; lamp.shadow.mapSize.set(1024, 1024); lamp.shadow.bias = -0.0008; lamp.shadow.camera.near = 0.2; scene.add(lamp, lamp.target);
 
-let N, S, led, ledT, prongs = [], ready = false; const PROTO = {};
+let N, S, led, ledT, prongs = [], ready = false, headSmear = null; const PROTO = {};
 const objs = new Map(), falling = [], shelf = [];
 const shelfG = new THREE.Group(); scene.add(shelfG);
 
@@ -74,7 +76,11 @@ async function boot() {
     gn.scale.setScalar(k); gn.position.y = -0.038 - b2.min.y * k; const g = new THREE.Group(); g.add(gn); PROTO.gnome = g; }
   { // PATTY MELT pillow: a puffed box, printed both faces
     const [w, h, d] = TYPES.patty.size, geo = new THREE.BoxGeometry(w * 0.96, h * 0.94, d, 10, 12, 2), P = geo.attributes.position;
-    for (let i = 0; i < P.count; i++) { const x = P.getX(i) / (w * 0.48), y = P.getY(i) / (h * 0.47); const f = Math.sqrt(Math.max(0, 1 - x * x * x * x)) * Math.sqrt(Math.max(0, 1 - y * y * y * y)); P.setZ(i, P.getZ(i) * (0.25 + 0.75 * f)); }
+    for (let i = 0; i < P.count; i++) {
+      // 1123: rounded (squircle) corners - a stuffed pillow, and the shape its 29-sphere hull (lib/claw.js) follows
+      const q = Math.pow((P.getX(i) / (w * 0.48)) ** 4 + (P.getY(i) / (h * 0.47)) ** 4, 0.25); if (q > 1) { P.setX(i, P.getX(i) / q); P.setY(i, P.getY(i) / q); }
+      const x = P.getX(i) / (w * 0.48), y = P.getY(i) / (h * 0.47); const f = Math.sqrt(Math.max(0, 1 - x * x * x * x)) * Math.sqrt(Math.max(0, 1 - y * y * y * y)); P.setZ(i, P.getZ(i) * (0.25 + 0.75 * f));
+    }
     geo.computeVertexNormals();
     const fab = (map) => new THREE.MeshPhysicalMaterial({ map, color: map ? 0xffffff : 0xf0e2c4, roughness: 1, sheen: 1, sheenRoughness: 0.5, sheenColor: new THREE.Color(0xffe0d0).multiplyScalar(0.4), specularIntensity: 0.05 });
     const side = fab(null), m = new THREE.Mesh(geo, [side, side, side, side, fab(tPatty), fab(tPatty)]); m.castShadow = m.receiveShadow = true;
@@ -107,10 +113,14 @@ async function boot() {
     const t0 = tipL.clone().applyQuaternion(pr.q0), t1 = tipL.clone().applyQuaternion(new THREE.Quaternion().setFromAxisAngle(pr.axis, 0.4).multiply(pr.q0));
     const out = (v) => v.x * pr.rel.x + v.z * pr.rel.z;
     pr.sign = out(t1) > out(t0) ? 1 : -1;
+    pr.smear = new Smear(ghostOf(pr.p, 0.42)); scene.add(pr.smear.g);       // SMEAR: the snap shut (where the prong just was)
   }
+  headSmear = new Smear(ghostOf(N.claw_head, 0.4)); scene.add(headSmear.g); // SMEAR: the drop lurch
   // the instruction card on the deck (printed, the machine's own)
-  const card = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.1), new THREE.MeshStandardMaterial({ map: placard(['MOVE  ·  ARROWS / DRAG', 'DROP  ·  SPACE / RED BUTTON', 'TOKEN  ·  C / THE SLOT', 'LET IT STOP SWINGING'], { title: 'HOW TO PLAY', accent: LEDCOL[0] }), roughness: 0.7 }));
-  card.position.set(0.0, B + 0.062, 0.46 + 0.05); card.rotation.x = -Math.PI / 2; scene.add(card);
+  // 1123: the card stands up on a little easel (tilted 50 deg to the player) with big type: you can read it from the stick
+  const card = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.09), new THREE.MeshStandardMaterial({ map: placard(['STICK / ARROWS / DRAG  =  MOVE', 'RED BUTTON / SPACE  =  DROP', 'WAIT FOR THE SWING TO STOP', 'CENTRE IT  ·  NEAR THE CHUTE'], { title: 'HOW TO PLAY', accent: LEDCOL[0], big: true }), roughness: 0.7, emissive: 0xffffff, emissiveIntensity: 0.18 }));
+  card.rotation.x = -Math.PI / 2 + 0.87; card.position.set(-0.01, B + 0.062 + 0.045 * Math.sin(0.87) + 0.002, 0.51 + 0.045 * Math.cos(0.87) - 0.045);   // 0.18 wide: clears the button ring (x 0.096) and the stick base scene.add(card);
+  window.__card = card;
   // the prize list under the glass: what is in THIS machine (the machine's own printed card)
   const names = MACHINES[KIND].mix.map(([t]) => TYPES[t].name);
   const card2 = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.1), new THREE.MeshStandardMaterial({ map: placard(names.slice(0, 5), { title: 'PRIZES', accent: LEDCOL[0] }), roughness: 0.7 }));
@@ -185,49 +195,72 @@ function resize() {
 }
 addEventListener('resize', resize);
 
-let last = performance.now(), flash = 0, doorT = 0, lastWin = '';
-const TILT = new THREE.Quaternion(), DOWN = new THREE.Vector3(0, -1, 0);
+let last = performance.now(), flash = 0, doorT = 0, lastWin = '', ledMsg = null, glow = 0, winCam = 0, lastOpenVis = 1, dropT = 9, dropFire = false, snapped = false;
+const TILT = new THREE.Quaternion(), DOWN = new THREE.Vector3(0, -1, 0), V1 = new THREE.Vector3(), Q1 = new THREE.Quaternion();
+const bars = (fit) => Math.max(1, Math.min(5, Math.round(fit * 5.4)));   // the grip read, 1..5 bars
+const say = (a, b, t = 1.6) => { ledMsg = { a, b, t }; };                // the timer LED tells you what just happened
+const openVis = (o) => Math.pow(Math.max(0, o), 0.6);                    // render-only: the prongs hang open, then SNAP shut
 function frameLoop(now) {
   requestAnimationFrame(frameLoop);
   const dt = Math.min(0.25, (now - last) / 1000); last = now;   // slow frames still play at real speed (the logic steps fixed ticks)
-  if (!ready) return;
+  if (!ready || STEP) return;
+  tickFrame(dt, now);
+}
+function tickFrame(dt, now, draw = true) {
   // the stick: keys + drag
   let jx = joy[0], jz = joy[1];
   if (keys.has('arrowleft') || keys.has('a')) jx = -1; if (keys.has('arrowright') || keys.has('d')) jx = 1;
   if (keys.has('arrowup') || keys.has('w')) jz = -1; if (keys.has('arrowdown') || keys.has('s')) jz = 1;
-  joystick(S, jx, jz);
+  if (!window.__botJoy) joystick(S, jx, jz); else { jx = S.joy[0]; jz = S.joy[1]; }
   step(S, dt);
   for (const e of S.events) {
-    if (e.type === 'drop') snd.clack();
-    else if (e.type === 'touch') snd.clack();
-    else if (e.type === 'grab') snd.clack();
-    else if (e.type === 'slip' || e.type === 'release') setTimeout(() => snd.thud(), 260);
-    else if (e.type === 'miss') snd.tone(180, 0.3, 'sawtooth', 0.08, 0, 0.6);
+    if (e.type === 'drop') { snd.clack(); dropT = 0; dropFire = true; snapped = false; }
+    else if (e.type === 'touch') snd.thud();
+    else if (e.type === 'grab') {
+      const n = bars(e.fit); snd.snap(); snd.grip(n);
+      say('GRIP ' + '■'.repeat(n) + '□'.repeat(5 - n), n >= 4 ? 'SOLID' : n >= 3 ? 'FAIR' : 'LOOSE', 2.4);
+    }
+    else if (e.type === 'slip') { setTimeout(() => snd.thud(), 260); snd.wah(); say('SLIPPED', 'CENTRE IT', 1.8); }
+    else if (e.type === 'lip') { setTimeout(() => snd.thud(), 200); snd.wah(); say('SO CLOSE', 'THE LIP', 2.0); }
+    else if (e.type === 'release') setTimeout(() => snd.thud(), 260);
+    else if (e.type === 'miss') { snd.tone(180, 0.3, 'sawtooth', 0.08, 0, 0.6); say('MISSED', 'AIM THE MIDDLE', 1.6); }
     else if (e.type === 'weak') snd.tone(90, 0.25, 'sawtooth', 0.05, 0, 0.7);        // the claw goes limp at the top
     else if (e.type === 'win') {
-      snd.fanfare(); flash = 3; lastWin = e.name;
-      const o = objs.get(e.id); if (o) { objs.delete(e.id); falling.push({ o, t: 0, vy: -0.6, y: o.position.y }); }
+      snd.fanfare(); snd.chute(); flash = 3.2; glow = 1; winCam = 1.6; lastWin = e.name; say('WINNER', '', 3.2);
+      const o = objs.get(e.id);
+      if (o) {                                      // the prize pops down the chute: it rides an unrotated wrap (the smear stretch is world-vertical)
+        objs.delete(e.id); const w = new THREE.Group(); w.position.copy(o.position); o.position.set(0, 0, 0); w.add(o); scene.add(w);
+        const gh = new Smear(ghostOf(o, 0.45)); scene.add(gh.g);
+        falling.push({ o, w, gh, t: 0, vy: -0.6, y: w.position.y, smears: 0 });
+      }
     }
   }
   S.events.length = 0;
   const moving = (S.phase === 'steer' && (jx || jz) && Math.abs(S.gx) < CW.GX && Math.abs(S.gz) < CW.GX) || S.phase === 'down' || S.phase === 'up' || S.phase === 'home';
   snd.motor(moving);
   // gantry + claw
-  const RZ = N.gantry_bridge.userData.y0 ??= N.gantry_bridge.position.y;
   N.gantry_bridge.position.z = S.gz;
   N.gantry_carriage.position.x = S.gx; N.gantry_carriage.position.z = S.gz;
-  const hubY = B + S.hy, H = head(S);
+  dropT += dt;
+  const lurch = S.phase === 'down' && dropT < 0.16 ? -0.018 * Math.sin(Math.PI * dropT / 0.16) : 0;   // render-only: the brake lets go
+  const hubY = B + S.hy + lurch, H = head(S);
   const cTop = N.claw_cable.userData.y0 ??= N.claw_cable.position.y;
   const cdir = new THREE.Vector3(H[0] - S.gx, hubY - cTop, H[2] - S.gz), clen = cdir.length(); cdir.normalize();
   TILT.setFromUnitVectors(DOWN, cdir);                                    // the cable swings: the claw hangs off its end
   N.claw_cable.position.set(S.gx, cTop, S.gz); N.claw_cable.scale.y = Math.max(0.01, clen - 0.001); N.claw_cable.quaternion.copy(TILT);
+  if (dropFire) { dropFire = false; headSmear.fire(N.claw_head.position, N.claw_head.quaternion, null, 2); }   // SMEAR: the drop lurch
   N.claw_head.position.set(H[0], hubY, H[2]); N.claw_head.quaternion.copy(TILT);
-  const ang = -0.12 + 0.62 * S.open;
+  N.claw_head.scale.set(1, lurch ? 1 + 0.35 * Math.abs(lurch) / 0.018 : 1, 1);
+  const ov = openVis(S.open), snap = S.phase === 'close' && !snapped && ov < 0.4 && (lastOpenVis - ov) / Math.max(dt, 1e-3) > 1.2;   // the fast tail = the snap: smear the prongs once
+  if (snap) snapped = true;
+  const angOf = (o) => -0.12 + 0.62 * o;
   for (const pr of prongs) {
     const r = pr.rel.clone().applyQuaternion(TILT);
     pr.p.position.set(H[0] + r.x, hubY + r.y, H[2] + r.z);
-    pr.p.quaternion.copy(TILT).multiply(new THREE.Quaternion().setFromAxisAngle(pr.axis, ang * pr.sign)).multiply(pr.q0);
+    if (snap) pr.smear.fire(pr.p.position, Q1.copy(TILT).multiply(new THREE.Quaternion().setFromAxisAngle(pr.axis, angOf((ov + lastOpenVis) / 2 + 0.08) * pr.sign)).multiply(pr.q0), null, 2);
+    pr.p.quaternion.copy(TILT).multiply(new THREE.Quaternion().setFromAxisAngle(pr.axis, angOf(ov) * pr.sign)).multiply(pr.q0);
   }
+  lastOpenVis = ov;
   // the stick tilts with you; the ball rides its top
   const js = N.joy_stick, jb = N.joy_ball;
   if (js) {
@@ -238,34 +271,69 @@ function frameLoop(now) {
   // the prizes: every one is a rigid body in the logic (tumbles, stacks, settles); the held one rides the claw
   for (const it of S.items) place(prizeObj(it), it.c, it.q, it.off);
   for (let i = falling.length - 1; i >= 0; i--) {                       // down the chute shaft, out the prize door, onto the shelf
-    const f = falling[i]; f.t += dt;
-    if (f.y > B + CW.TRAY + 0.04) { f.vy -= 9.8 * dt; f.y = Math.max(B + CW.TRAY + 0.04, f.y + f.vy * dt); f.o.position.y = f.y; f.o.rotateX(dt * 4); }
-    else { if (!f.out) { f.out = true; doorT = 1.2; snd.thud(); } f.o.position.z = Math.min(0.62, f.o.position.z + dt * 0.5); f.o.position.x += (-0.27 - f.o.position.x) * Math.min(1, dt * 6); }
+    const f = falling[i]; f.t += dt; const w = f.w;
+    if (f.y > B + CW.TRAY + 0.04) {
+      const y0 = f.y; f.vy -= 9.8 * dt; f.y = Math.max(B + CW.TRAY + 0.04, f.y + f.vy * dt); w.position.y = f.y; f.o.rotateX(dt * 4);
+      // SMEAR: the pop - the first frame it drops and the fastest frame before the tray: ghost where it was + a stretch
+      const fast = f.smears === 0 || (f.smears === 1 && f.y - (B + CW.TRAY + 0.04) < Math.abs(f.vy) * dt * 2.5);
+      if (fast && !f.gh.on) { f.smears++; f.gh.fire(V1.set(w.position.x, (y0 + f.y) / 2 + 0.02, w.position.z), f.o.getWorldQuaternion(Q1), null, 2); w.userData.st = 2; }
+      const st = w.userData.st > 0 ? w.userData.st-- : 0; w.scale.set(st ? 0.86 : 1, st ? 1.38 : 1, st ? 0.86 : 1);
+    }
+    else { w.scale.set(1, 1, 1); if (!f.out) { f.out = true; doorT = 1.2; snd.thud(); } w.position.z = Math.min(0.62, w.position.z + dt * 0.5); w.position.x += (-0.27 - w.position.x) * Math.min(1, dt * 6); }
     if (f.t > 2.4) {
-      falling.splice(i, 1); const n = shelf.length; shelf.push(f.o);
+      falling.splice(i, 1); scene.remove(w); scene.remove(f.gh.g); w.remove(f.o); scene.add(f.o);
+      const n = shelf.length; shelf.push(f.o);
       f.o.position.set(0.7 + (n % 5) * 0.12, 1.066 + 0.05, -0.08 + Math.floor(n / 5) * 0.13); f.o.quaternion.identity(); f.o.rotation.set(0, -0.6 + (n % 3) * 0.3, 0);
       if (shelf.length > 15) scene.remove(shelf.shift());
     }
   }
   if (N.prize_door) { doorT = Math.max(0, doorT - dt); N.prize_door.rotation.x = doorT > 0 ? -0.9 * Math.min(1, doorT * 2) : 0; }
+  // the win moment: the cab's own lamps flare (rim + the interior lamp pulse), the camera leans to the prize door
+  glow = Math.max(0, glow - dt * 0.6);
+  rim.intensity = 3 + 14 * glow * (0.6 + 0.4 * Math.sin(now / 45)); lamp.intensity = 9 + 10 * glow;
   // LEDs: the machine's own panels
   flash = Math.max(0, flash - dt);
   if (flash > 0) led.set('WINNER', lastWin, Math.floor(now / 160) % 2 === 0);
   else if (S.credits <= 0 && S.phase === 'idle') led.set('INSERT', 'TOKEN', Math.floor(now / 500) % 2 === 0);
   else led.set('TOKENS ' + S.credits, S.wins ? 'WON ' + S.wins : '');
-  ledT.set(S.phase === 'steer' ? String(Math.ceil(S.timer)).padStart(2, '0') : S.phase === 'idle' ? '--' : 'GO', S.phase === 'steer' && S.timer < 5 ? 'HURRY' : '');
+  if (ledMsg) { ledMsg.t -= dt; if (ledMsg.t <= 0) ledMsg = null; }
+  if (ledMsg && S.phase !== 'steer') ledT.set(ledMsg.a, ledMsg.b);
+  else if (S.phase === 'steer') ledT.set(String(Math.ceil(S.timer)).padStart(2, '0'), S.timer < 5 ? 'HURRY' : swing(S) > 0.01 ? 'WAIT · SWINGING' : 'READY · DROP');
+  else if (S.phase === 'idle') ledT.set(S.credits > 0 ? 'PRESS' : '--', S.credits > 0 ? 'RED BUTTON' : 'INSERT TOKEN', S.credits > 0 && Math.floor(now / 600) % 2 === 0);
+  else ledT.set('GO', '');
   // camera: in front of the glass at eye height, a gentle follow; V = lean to the side to judge depth
   peekT += ((peek ? 1 : 0) - peekT) * Math.min(1, dt * 4);
-  const tgt = new THREE.Vector3(S.gx * 0.15, 1.4, S.gz * 0.1);           // deck .. marquee (0.75 .. 2.1 m) fills the view
-  const dist = frame(camera, tgt, 1.0, 1.36, 1.02) + 0.46;
-  const a = peekT * 0.75 + (S.phase === 'steer' ? 0 : 0);
-  camera.position.set(tgt.x + Math.sin(a) * dist, 1.55 + peekT * 0.1, Math.cos(a) * dist);
+  winCam = Math.max(0, winCam - dt); const wc = Math.sin(Math.min(1, winCam / 1.6) * Math.PI) * 0.6;
+  const tgt = ZOOM ? new THREE.Vector3(-0.05, B + 0.2, 0) : new THREE.Vector3(S.gx * 0.15 - 0.12 * wc, 1.4 - 0.22 * wc, S.gz * 0.1 + 0.1 * wc);   // deck .. marquee (0.75 .. 2.1 m) fills the view
+  const dist = ZOOM ? frame(camera, tgt, 1.05, 0.75, 1.0) + 0.3 : frame(camera, tgt, 1.0, 1.36, 1.02) + 0.46 - 0.35 * wc;
+  const a = peekT * 0.75;
+  camera.position.set(tgt.x + Math.sin(a) * dist, ZOOM ? B + 0.62 : 1.55 + peekT * 0.1 - 0.12 * wc, Math.cos(a) * dist);
   camera.lookAt(tgt);
-  R.render(scene, camera);
+  const smearNow = headSmear.on || prongs.some((p) => p.smear.on) || falling.some((f) => f.gh.on);
+  if (draw || smearNow) R.render(scene, camera);
+  let sm = headSmear.tick() ? 1 : 0;                                     // smears live 1-2 drawn frames
+  for (const pr of prongs) sm += pr.smear.tick() ? 1 : 0;
+  for (const f of falling) sm += f.gh.tick() ? 1 : 0;
+  window.__smears = (window.__smears || 0) + (sm ? 1 : 0);
+  return smearNow;
 }
 requestAnimationFrame(frameLoop);
+// the shot harness (?step): advance n frames of fixed dt, synchronously
+let simNow = 0;
+window.__advance = (n = 1, dt = 1 / 30, stopOnSmear = false) => { for (let i = 0; i < n; i++) { simNow += dt * 1000; const sm = tickFrame(dt, simNow, i === n - 1 || !stopOnSmear); if (stopOnSmear && sm) return { stop: i + 1, smear: true, v: S.phase }; } return stopOnSmear ? { stop: n, smear: false, v: S.phase } : S.phase; };
 boot().catch((e) => { document.getElementById('load').textContent = 'OUT OF ORDER · ' + e.message; console.error(e); });
 window.__claw = () => S;                       // headless check hooks
+window.__clawAPI = { insert, joystick, dropClaw, aimPoint, swing, head, CW, TYPES };
+window.__cardClear = () => {                   // the tilted card vs every cab mesh: sample its face, test each mesh's box
+  const card = window.__card, out = new Set(), P = new THREE.Vector3(), bb = new THREE.Box3(), meshes = [];
+  scene.traverse((o) => { if (o.isMesh && o !== card && !o.name.startsWith('glass') && o.parent && !objs.has(o.id)) meshes.push(o); });
+  card.updateWorldMatrix(true, false);
+  for (let i = 0; i <= 10; i++) for (let k = 0; k <= 5; k++) {
+    P.set(-0.09 + 0.018 * i, -0.045 + 0.018 * k, 0).applyMatrix4(card.matrixWorld);
+    for (const m of meshes) { bb.setFromObject(m).expandByScalar(-0.001); if (bb.containsPoint(P)) out.add(m.name || m.parent.name); }
+  }
+  return [...out];
+};
 window.__btnScreen = () => (N && N.btn_drop ? screenOf(N.btn_drop) : null);
 window.__slotScreen = () => (N && N.coin_slot ? screenOf(N.coin_slot) : null);
 </script>

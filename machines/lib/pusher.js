@@ -17,14 +17,18 @@ import { rng } from './rng.js';
 export const GP = {
   W: 0.52, R: 0.014, GR: 0.026, GUT: 0.15,
   PF_MIN: 0.16, PF_MAX: 0.28, PERIOD: 2.6, WALL: 0.55,
-  DROP_Y: 0.533, FALL_T: 0.42, GATE_T: 0.24, GATE_HALF: 0.011, GATE_PERIOD: 3.1,
+  DROP_Y: 0.533, FALL_T: 0.42, GATE_T: 0.24, GATE_HALF: 0.008, GATE_PERIOD: 3.1,
   DT: 1 / 30, ITERS: 4, STACK: 0.42,
   COIN_TICKETS: 1, GNOME_TICKETS: 25, START_CREDITS: 25, DROP_GAP: 0.28,
+  // 1123 payout review: a coin RATTLES down the drop lane (lateral spread, metres sd) so the gate is a timing shot,
+  // not a sure thing, and the MUSHROOM GATE lights one of LAMPS lamps per pass; the last lamp spins the GNOME BONUS.
+  // (v1: every pass spun the wheel: a player who timed the gate won ~5 tickets per token. Now ~1.)
+  RATTLE: 0.013, LAMPS: 4,
 };
 
-const BONUS = [  // weight, outcome  (the GNOME BONUS wheel)
-  [50, { name: 'GNOME SHOWER', coins: 3 }], [26, { name: 'GNOME SHOWER', coins: 6 }], [14, { name: 'GNOME DROP', gnome: 1 }],
-  [8, { name: 'WIN BIG', coins: 12 }], [2, { name: 'JACKPOT', coins: 30, gnome: 1 }],
+const BONUS = [  // weight, outcome  (the GNOME BONUS wheel, spun when the last mushroom lamp lights)
+  [48, { name: 'GNOME SHOWER', coins: 3 }], [26, { name: 'GNOME SHOWER', coins: 6 }], [16, { name: 'GNOME DROP', gnome: 1 }],
+  [8, { name: 'WIN BIG', coins: 14 }], [2, { name: 'JACKPOT', coins: 30, gnome: 1 }],
 ];
 
 export function pfAt(t) { return GP.PF_MIN + (GP.PF_MAX - GP.PF_MIN) * (0.5 + 0.5 * Math.cos(2 * Math.PI * t / GP.PERIOD)); }
@@ -39,9 +43,9 @@ function item(kind, x, y, tier) {
 export function createPusher(seed = 1, opt = {}) {
   const R = rng(seed);
   const S = {
-    seed, R, t: 0, acc: 0, pf: GP.PF_MAX, gx: 0, items: [], pending: [], events: [],
+    seed, R, t: 0, acc: 0, pf: GP.PF_MAX, gx: 0, items: [], pending: [], events: [], lamps: 0,
     credits: opt.credits ?? GP.START_CREDITS, tickets: 0, gnomesWon: 0, lastDrop: -9,
-    stats: { inserted: 0, house: 0, initial: 0, wonCoins: 0, lostCoins: 0, wonGnomes: 0, lostGnomes: 0, bonuses: 0, houseGnomes: 0, initialGnomes: 0 },
+    stats: { inserted: 0, house: 0, initial: 0, wonCoins: 0, lostCoins: 0, wonGnomes: 0, lostGnomes: 0, bonuses: 0, houseGnomes: 0, initialGnomes: 0, gatePasses: 0 },
   };
   // the operator's fill: a packed lower deck, a half-full shelf, prize gnomes on both
   const place = (tier, y0, y1, n, kind = 'coin') => {
@@ -84,8 +88,8 @@ export function createPusher(seed = 1, opt = {}) {
 export function resetCounters(S) {
   const st = S.stats, coins = S.items.filter((o) => o.kind === 'coin').length + S.pending.filter((p) => p.kind === 'coin').length;
   const gn = S.items.filter((o) => o.kind === 'gnome').length + S.pending.filter((p) => p.kind === 'gnome').length;
-  Object.assign(st, { inserted: 0, house: 0, initial: coins, wonCoins: 0, lostCoins: 0, wonGnomes: 0, lostGnomes: 0, bonuses: 0, houseGnomes: 0, initialGnomes: gn });
-  S.tickets = 0; S.gnomesWon = 0; S.events.length = 0;
+  Object.assign(st, { inserted: 0, house: 0, initial: coins, wonCoins: 0, lostCoins: 0, wonGnomes: 0, lostGnomes: 0, bonuses: 0, houseGnomes: 0, initialGnomes: gn, gatePasses: 0 });
+  S.lamps = 0; S.tickets = 0; S.gnomesWon = 0; S.events.length = 0;
 }
 
 export function addCredits(S, n) { S.credits += n; S.events.push({ type: 'credit', n }); }
@@ -95,7 +99,7 @@ export function drop(S, x) {
   if (S.credits <= 0 || S.t - S.lastDrop < GP.DROP_GAP) return false;
   S.credits--; S.lastDrop = S.t; S.stats.inserted++;
   const lim = GP.W / 2 - GP.R - 0.004; x = Math.max(-lim, Math.min(lim, x));
-  const jx = Math.max(-lim, Math.min(lim, x + S.R.normal() * 0.004));
+  const jx = Math.max(-lim, Math.min(lim, x + S.R.normal() * GP.RATTLE));
   S.pending.push({ kind: 'coin', x: jx, aim: x, t0: S.t, land: S.t + GP.FALL_T, pass: S.t + GP.GATE_T, gate: true });
   S.events.push({ type: 'drop', x: jx });
   return true;
@@ -212,7 +216,11 @@ export function tick(S) {
     const p = S.pending[i];
     if (p.gate && S.t >= p.pass) {
       p.gate = false;
-      if (Math.abs(p.x - gateAt(p.pass)) < GP.GATE_HALF) bonus(S, p.x);
+      if (Math.abs(p.x - gateAt(p.pass)) < GP.GATE_HALF) {
+        S.lamps++; S.stats.gatePasses++;
+        S.events.push({ type: 'lamp', n: S.lamps, of: GP.LAMPS, x: p.x });
+        if (S.lamps >= GP.LAMPS) { S.lamps = 0; bonus(S, p.x); }
+      }
     }
     if (S.t >= p.land) {
       S.pending.splice(i, 1);

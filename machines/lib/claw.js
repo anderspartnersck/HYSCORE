@@ -25,20 +25,67 @@ export const CW = {
   TOP: 0.55, ANCHOR: 0.92, HUB: 0.05, HUB_R: 0.04, PRONG: 0.115, TIP_R: 0.012, OPEN_R: 0.078, SHUT_R: 0.022,
   GX: 0.37, SPEED: 0.26, ACC: 1.3, DOWN: 0.32, UP: 0.26, CLOSE_T: 0.7, OPEN_T: 0.6, TIME: 20,
   SWING_DAMP: 1.1, CRADLE: 0.07,
-  HOME: [-0.33, 0.33], G: 9.8, DT: 1 / 60, START_CREDITS: 10, PAYOUT_EVERY: 12, RESTOCK_BELOW: 18, ITER: 3,
+  HOME: [-0.33, 0.33], G: 9.8, DT: 1 / 60, START_CREDITS: 10, RESTOCK_BELOW: 18, ITER: 3,   // grip + payout knobs: GRIP below
 };
 
-// prize types: local spheres [x, y, z, r] (y up), grip (how well prongs hold it), weight (the load it puts on the claw)
+// ---------------------------------------------------------------- THE GRIP TUNING BLOCK (1123: every knob in one place)
+// The claw's hold on a prize = VOLTS x FIT against LOAD.
+//   FIT  = the prize's friction (mu) x the best of its GRIP POINTS (how centred the claw is on that point, how far the
+//          prong tips got below it, the point's own quality) x how it LIES (flat / on edge / upright) x prongs engaged.
+//   VOLTS = a real machine's two-stage claw voltage: PICKUP while it closes + lifts, CARRY once it tops out, with a
+//          seeded strength WOBBLE through the carry (the limp claw breathing). One try in ~PAYOUT_EVERY is STRONG.
+//   LOAD = weight x (1 + the swing's g + the lift jerk + the LIP jolt as the carriage brakes over the chute).
+// Below the load the prize slips at a hazard rate (per second) that grows with the deficit: the drop at the chute lip
+// is the brake jolt landing on a marginal grip right over the guard wall.
+export const GRIP = {
+  PAYOUT_EVERY: 14,                 // ~1 strong try in this many (seeded 0.6..1.4 x)
+  STRONG: 2.4,                      // strong-try volts (pickup and carry)
+  PICKUP: [1.4, 1.8],                // weak-try pickup volts (seeded per try)
+  CARRY: [0.88, 1.2],                // weak-try carry volts (seeded per try): the limp claw
+  WOBBLE: 0.1, WOBBLE_HZ: 1.7,      // carry strength wobble: +-10 %, a slow breath (seeded phase)
+  SWING_LOAD: 0.8,                  // load per g of sideways swing
+  LIFT_JERK: 0.25,                  // the yank as the cable starts winding (first 3 cm)
+  LIP_JOLT: 0.16, LIP_R: 0.06,      // the brake over the chute: extra load inside LIP_R of home
+  SLIP_LIFT: 2.2, SLIP_CARRY: 7, SLIP_BASE: 0.15,   // slip hazard / s = (RATE x deficit / load + BASE) below the load
+  PRONGS3: 1.0, PRONGS2: 0.78,      // three prongs round it vs two
+  CENTRE_POW: 1,                    // centring falloff: q x (1 - (off / tol) ^ POW)
+  DEPTH_SPAN: 0.045, DEPTH_MIN: 0.45, // tips this far below the grip point = full bite; none = DEPTH_MIN
+  PINCH_KEEP: 0.6,                  // how much of the first-touch offset the closing prongs do NOT fix
+};
+
+// prize types: the COLLISION PROXY (local spheres [x, y, z, r], y up: a compound that hugs the model), the weight w,
+// soft (how far prongs dig in), and the GRIP PROFILE g:
+//   mu   friction (plush grips, vinyl less, a lacquered puck or plaque slides)
+//   pts  grip points [x, y, z, tol, q]: where the prongs can actually close round it (tol = centring tolerance, q = quality)
+//   lie  [axis, flat q, edge q]: the local axis that is "up" when it lies the good way, and how well it holds each way
 const S2 = (a, r) => [[-a, 0, 0, r], [a, 0, 0, r]];
 export const TYPES = {
-  sheep: { name: 'ATTENTION SHEEP', parts: S2(0.03, 0.047), grip: 1.0, w: 1.0, soft: 0.18, theme: true },
-  cow: { name: 'SUCK UP COW', parts: S2(0.032, 0.049), grip: 0.95, w: 1.12, soft: 0.2, theme: true },
-  crab: { name: 'BLUE CLAW CRAB', parts: [[-0.04, 0, 0, 0.042], [0.0, 0, 0, 0.046], [0.04, 0, 0, 0.042]], grip: 1.0, w: 0.95, soft: 0.22, theme: true },
-  patty: { name: 'PATTY MELT PILLOW', parts: [[-0.034, -0.04, 0, 0.03], [0.034, -0.04, 0, 0.03], [-0.034, 0.04, 0, 0.03], [0.034, 0.04, 0, 0.03]], grip: 0.9, w: 0.8, soft: 0.2, size: [0.13, 0.15, 0.06] },
-  gnome: { name: 'GROVE GNOME', parts: [[0, 0.0, 0, 0.038], [0, 0.055, 0, 0.026]], grip: 1.15, w: 0.75, soft: 0.4 },
-  puck: { name: 'HIGH TABLE PUCK', parts: [[0, 0, 0, 0.017], [0.032, 0, 0, 0.017], [-0.032, 0, 0, 0.017], [0, 0, 0.032, 0.017], [0, 0, -0.032, 0.017]], grip: 0.55, w: 0.9, soft: 0.6, size: [0.1, 0.034, 0.1] },
-  deed: { name: 'ER$N DEED PLAQUE', parts: [[-0.025, 0, -0.04, 0.017], [-0.025, 0, 0, 0.017], [-0.025, 0, 0.04, 0.017], [0.025, 0, -0.04, 0.017], [0.025, 0, 0, 0.017], [0.025, 0, 0.04, 0.017]], grip: 0.6, w: 0.6, soft: 0.6, size: [0.085, 0.03, 0.12] },
+  sheep: { name: 'ATTENTION SHEEP', parts: S2(0.03, 0.047), w: 0.92, soft: 0.18, theme: true,
+    g: { mu: 1.0, pts: [[0, 0, 0, 0.035, 1], [-0.032, 0, 0, 0.022, 0.7], [0.032, 0, 0, 0.022, 0.7]], lie: null } },
+  cow: { name: 'SUCK UP COW', parts: S2(0.032, 0.049), w: 0.95, soft: 0.2, theme: true,
+    g: { mu: 1.0, pts: [[0, 0, 0, 0.035, 1], [-0.034, 0, 0, 0.022, 0.7], [0.034, 0, 0, 0.022, 0.7]], lie: null } },
+  crab: { name: 'BLUE CLAW CRAB', parts: [[-0.04, 0, 0, 0.042], [0.0, 0, 0, 0.046], [0.04, 0, 0, 0.042]], w: 0.95, soft: 0.22, theme: true,
+    g: { mu: 1.0, pts: [[0, 0, 0, 0.035, 1], [-0.04, 0, 0, 0.022, 0.7], [0.04, 0, 0, 0.022, 0.7]], lie: null } },
+  // PATTY MELT pillow (0.13 x 0.15 x 0.06, puffed, rounded corners): a hull of 29 spheres - a 3 x 3 slab through the
+  // puffed middle, four corner pads and a rim ring of 16 of small spheres round the squircle edge (the page rounds the pillow's corners to match)
+  patty: { name: 'PATTY MELT PILLOW', w: 0.8, soft: 0.25, size: [0.13, 0.15, 0.06],
+    parts: [[-0.028, -0.036, 0, 0.029], [-0.028, 0, 0, 0.029], [-0.028, 0.036, 0, 0.029], [0, -0.036, 0, 0.029], [0, 0, 0, 0.029], [0, 0.036, 0, 0.029], [0.028, -0.036, 0, 0.029], [0.028, 0, 0, 0.029], [0.028, 0.036, 0, 0.029], [-0.042, -0.049, 0, 0.02], [-0.042, 0.049, 0, 0.02], [0.042, -0.049, 0, 0.02], [0.042, 0.049, 0, 0.02], [0.0524, 0, 0, 0.014], [0.0519, 0.0377, 0, 0.014], [0.0458, 0.0518, 0, 0.014], [0.0337, 0.0591, 0, 0.014], [0, 0.0605, 0, 0.014], [-0.0337, 0.0591, 0, 0.014], [-0.0458, 0.0518, 0, 0.014], [-0.0519, 0.0377, 0, 0.014], [-0.0524, 0, 0, 0.014], [-0.0519, -0.0377, 0, 0.014], [-0.0458, -0.0518, 0, 0.014], [-0.0337, -0.0591, 0, 0.014], [0, -0.0605, 0, 0.014], [0.0337, -0.0591, 0, 0.014], [0.0458, -0.0518, 0, 0.014], [0.0519, -0.0377, 0, 0.014]],
+    g: { mu: 0.9, pts: [[0, 0, 0, 0.034, 1], [0, -0.04, 0, 0.024, 0.78], [0, 0.04, 0, 0.024, 0.78]], lie: [2, 1.0, 0.86] } },
+  // GROVE GNOME (0.119 tall, faces -x): its flat base as a ring, the body, the beard + nose (offset to its face), the hat
+  gnome: { name: 'GROVE GNOME', w: 0.78, soft: 0.2,
+    parts: [[0.026, -0.03, 0.0, 0.009], [0.0225, -0.03, 0.013, 0.009], [0.013, -0.03, 0.0225, 0.009], [0.0, -0.03, 0.026, 0.009], [-0.013, -0.03, 0.0225, 0.009], [-0.0225, -0.03, 0.013, 0.009], [-0.026, -0.03, 0.0, 0.009], [-0.0225, -0.03, -0.013, 0.009], [-0.013, -0.03, -0.0225, 0.009], [-0.0, -0.03, -0.026, 0.009], [0.013, -0.03, -0.0225, 0.009], [0.0225, -0.03, -0.013, 0.009],
+      [0, -0.012, 0, 0.025], [0, 0.004, 0, 0.022], [-0.01, 0.018, 0, 0.021], [-0.022, 0.028, 0, 0.011], [0, 0.046, 0, 0.02], [0, 0.066, 0, 0.014]],
+    g: { mu: 0.86, pts: [[0, 0.012, 0, 0.034, 1], [-0.004, 0.032, 0, 0.024, 0.8], [0, 0.058, 0, 0.015, 0.45]], lie: [1, 0.95, 1.0] } },
+  puck: { name: 'HIGH TABLE PUCK', parts: [[0, 0, 0, 0.017], [0.032, 0, 0, 0.017], [-0.032, 0, 0, 0.017], [0, 0, 0.032, 0.017], [0, 0, -0.032, 0.017]], w: 0.85, soft: 0.6, size: [0.1, 0.034, 0.1],
+    g: { mu: 0.85, pts: [[0, 0, 0, 0.028, 1]], lie: [1, 1.0, 0.75] } },
+  deed: { name: 'ER$N DEED PLAQUE', parts: [[-0.025, 0, -0.04, 0.017], [-0.025, 0, 0, 0.017], [-0.025, 0, 0.04, 0.017], [0.025, 0, -0.04, 0.017], [0.025, 0, 0, 0.017], [0.025, 0, 0.04, 0.017]], w: 0.72, soft: 0.6, size: [0.085, 0.03, 0.12],
+    g: { mu: 0.72, pts: [[0, 0, 0, 0.028, 1], [0, 0, -0.035, 0.02, 0.75], [0, 0, 0.035, 0.02, 0.75]], lie: [1, 1.0, 0.75] } },
 };
+// each type's bounding radius about its centroid (the pair test's broad phase)
+for (const T of Object.values(TYPES)) {
+  const n = T.parts.length, m = [0, 1, 2].map((k) => T.parts.reduce((a, q) => a + q[k], 0) / n);
+  T.bound = Math.max(...T.parts.map((q) => Math.hypot(q[0] - m[0], q[1] - m[1], q[2] - m[2]) + q[3]));
+}
 // each machine: its own plush in bulk + a few of the house prizes
 export const MACHINES = {
   sheep: { name: 'ATTENTION SHEEP', mix: [['sheep', 14], ['patty', 3], ['gnome', 3], ['puck', 3], ['deed', 3]] },
@@ -70,13 +117,13 @@ export function createClaw(kind = 'sheep', seed = 1, opt = {}) {
     ctrl: { since: 0, payAt: 0 },
     stats: { plays: 0, wins: 0, skillWins: 0, strongPlays: 0, strongWins: 0, grabs: 0, slips: 0, misses: 0, nudgeWins: 0, restocked: 0, initial: 0, byType: {} },
   };
-  S.ctrl.payAt = nextPay(S);
+  S.ctrl.payAt = nextPay(S); S.ctrl.since = S.R.int(S.ctrl.payAt);   // a machine mid-cycle: the last player's tries count
   stock(S, opt.count ?? null, true);
   settle(S, 6);
   S.stats.initial = S.items.length; S.stats.wins = 0; S.stats.byType = {}; S.wins = 0; S.won.length = 0; S.events.length = 0;
   return S;
 }
-const nextPay = (S) => Math.max(3, Math.round(CW.PAYOUT_EVERY * S.R.range(0.6, 1.4)));
+const nextPay = (S) => Math.max(3, Math.round(GRIP.PAYOUT_EVERY * S.R.range(0.6, 1.4)));
 
 function makeItem(S, type, x, y, z) {
   const T = TYPES[type], q = qnorm(qmul(qaxis(0, 1, 0, S.R() * 6.283), qaxis(1, 0, 0, S.R.range(-0.5, 0.5))));
@@ -119,7 +166,7 @@ export function insert(S) {
 }
 
 export function joystick(S, jx, jz) { S.joy[0] = Math.max(-1, Math.min(1, jx || 0)); S.joy[1] = Math.max(-1, Math.min(1, jz || 0)); }
-export function dropClaw(S) { if (S.phase === 'steer') { S.phase = 'down'; S.joy[0] = S.joy[1] = 0; S.events.push({ type: 'drop' }); return true; } return false; }
+export function dropClaw(S) { if (S.phase === 'steer') { S.phase = 'down'; S.firstTouch = new Map(); S.joy[0] = S.joy[1] = 0; S.events.push({ type: 'drop' }); return true; } return false; }
 
 export function step(S, dt) {
   S.acc += Math.min(dt, 0.25);
@@ -162,25 +209,63 @@ function carriage(S, tvx, tvz) {
 export const swing = (S) => Math.hypot(S.sx, S.sz);
 
 // ---------------------------------------------------------------- grab / hold / release
+/** a prize's grip points in the world: [x, y, z, tol, q] */
+export function gripPoints(it) {
+  return it.T.g.pts.map(([x, y, z, tol, q]) => { const o = qrot(it.q, [x - it.off[0], y - it.off[1], z - it.off[2]]); return [it.c[0] + o[0], it.c[1] + o[1], it.c[2] + o[2], tol, q]; });
+}
+/** how well it lies for a claw (the lie factor: flat / on edge / upright), 0..1 */
+export function lieScore(it) {
+  const L = it.T.g.lie; if (!L) return 1;
+  const ax = [0, 0, 0]; ax[L[0]] = 1; const up = Math.abs(qrot(it.q, ax)[1]);   // 1 = its good axis points up
+  return L[2] + (L[1] - L[2]) * up;
+}
+/** what a player sees as its middle: the centre of the model's box (the proxy's AABB, local), top-down [x, z] */
+export function lookCentre(it) {
+  const P = it.T.parts, lo = [0, 1, 2].map((k) => Math.min(...P.map((q) => q[k] - q[3]))), hi = [0, 1, 2].map((k) => Math.max(...P.map((q) => q[k] + q[3])));
+  const o = qrot(it.q, [0, 1, 2].map((k) => (lo[k] + hi[k]) / 2 - it.off[k])); return [it.c[0] + o[0], it.c[2] + o[2]];
+}
+/** where a skilled player aims for it: its best grip point, top-down [x, z] */
+export function aimPoint(it) {
+  let best = null, bq = -1; for (const g of gripPoints(it)) if (g[4] > bq) { bq = g[4]; best = g; }
+  return [best[0], best[2]];
+}
+/** the fit of the claw (axis at hx, hz; closed tips at height ty) on a prize: 0..~1, and the grip point it used */
+export function gripFit(it, hx, hz, ty, prongs = 3, offs = null) {
+  let best = 0, bi = -1, bc = 0, bd = 0; const P = gripPoints(it);
+  let lo = 1e9; for (const p of it.p) lo = Math.min(lo, p.y - p.r);                  // its underside: a flat prize needs less bite
+  P.forEach((g, i) => {
+    const off = offs ? offs[i] : Math.hypot(g[0] - hx, g[2] - hz), u = Math.min(1, off / g[3]);
+    const centre = Math.max(0, 1 - u ** GRIP.CENTRE_POW);
+    const dep = Math.max(0, Math.min(1, (g[1] - ty) / Math.min(GRIP.DEPTH_SPAN, Math.max(0.012, g[1] - lo)))), depth = GRIP.DEPTH_MIN + (1 - GRIP.DEPTH_MIN) * dep;
+    const f = g[4] * centre * depth; if (f > best) { best = f; bi = i; bc = centre; bd = depth; }
+  });
+  const lie = lieScore(it);
+  return { fit: it.T.g.mu * best * lie * (prongs >= 3 ? GRIP.PRONGS3 : GRIP.PRONGS2), point: bi, centre: bc, depth: bd, lie };
+}
+
 function grab(S) {
   // caught = at least two prongs closed against it, its middle inside the cradle and above the tips
-  const [hx, , hz] = head(S), ty = tipY(S), T = tips(S); let best = null, bd = 1e9, bc = null, bn = 0;
+  const [hx, , hz] = head(S), ty = tipY(S), T = tips(S); let best = null, bd = 1e9, bn = 0;
   for (const it of S.items) {
     if (it.state !== 'pit') continue;
     const c = it.c, d = Math.hypot(c[0] - hx, c[2] - hz);
     if (d > CW.CRADLE || c[1] < ty - 0.015 || c[1] > S.hy - CW.HUB + 0.03) continue;
     let n = 0;
     for (const t of T) if (it.p.some((p) => Math.hypot(p.x - t[0], p.y - t[1], p.z - t[2]) < p.r + CW.TIP_R + 0.014)) n++;
-    if (n >= 2 && d < bd) { best = it; bd = d; bc = c; bn = n; }
+    if (n >= 2 && d < bd) { best = it; bd = d; bn = n; }
   }
   if (!best) { S.stats.misses++; S.events.push({ type: 'miss' }); return; }
-  const off = best.d0 != null ? Math.max(bd, best.d0) : bd, align = Math.max(0, 1 - off / CW.CRADLE), depth = Math.max(0, Math.min(1, (bc[1] - ty) / 0.05));
-  S.fit = best.T.grip * (0.35 + 0.65 * align) * (0.55 + 0.45 * depth) * (bn === 3 ? 1 : 0.8);
-  S.volts = S.strong ? 2.6 : S.R.range(1.1, 1.6);                              // PICKUP voltage (closing + lifting)
-  S.carry = S.strong ? 2.6 : S.R.range(0.25, 0.75);                           // CARRY voltage once it tops out
+  // the closing prongs pull it toward the middle, but only part way: the offset at first touch mostly stands
+  const now = gripPoints(best).map((g) => Math.hypot(g[0] - hx, g[2] - hz));
+  const g0 = S.firstTouch.get(best.id), offs = g0 ? now.map((d, i) => GRIP.PINCH_KEEP * g0[i] + (1 - GRIP.PINCH_KEEP) * d) : now;
+  const gf = gripFit(best, hx, hz, ty, bn, offs);
+  S.fit = gf.fit;
+  S.volts = S.strong ? GRIP.STRONG : S.R.range(GRIP.PICKUP[0], GRIP.PICKUP[1]);       // PICKUP voltage (closing + lifting)
+  S.carry = S.strong ? GRIP.STRONG : S.R.range(GRIP.CARRY[0], GRIP.CARRY[1]);         // CARRY voltage once it tops out
+  S.wobPh = S.R() * 6.283;
   S.held = best; best.state = 'held'; best.asleep = false; S.stats.grabs++;
-  best.hold = [bc[0] - hx, bc[1] - S.hy, bc[2] - hz];                         // where it sits in the claw (pulled snug below)
-  S.events.push({ type: 'grab', id: best.id, item: best.type, fit: S.fit, align, strong: S.strong });
+  const c = best.c; best.hold = [c[0] - hx, c[1] - S.hy, c[2] - hz];               // where it sits in the claw (pulled snug below)
+  S.events.push({ type: 'grab', id: best.id, item: best.type, fit: S.fit, point: gf.point, centre: gf.centre, depth: gf.depth, lie: gf.lie, prongs: bn, strong: S.strong });
 }
 
 function release(S, why) {
@@ -190,7 +275,8 @@ function release(S, why) {
     p.vx = vx + spin * (p.z - it.c[2]); p.vz = vz - spin * (p.x - it.c[0]); p.vy = vy;
   }
   it.state = 'pit'; it.sleep = 0; it.asleep = false; S.held = null;
-  if (why === 'slip') S.stats.slips++;
+  if (why === 'slip' || why === 'lip') S.stats.slips++;
+  if (why === 'lip') S.stats.lips = (S.stats.lips || 0) + 1;
   S.events.push({ type: why, id: it.id, item: it.type });
 }
 
@@ -202,12 +288,14 @@ function holdHeld(S) {                   // the held prize rides the claw (rigid
   for (const p of it.p) { p.x += dx; p.y += dy; p.z += dz; p.vx = p.vy = p.vz = 0; }
   centre(it);
   if (S.phase === 'open') return;
-  const volts = S.phase === 'home' ? S.carry : S.volts;
-  const load = it.T.w * (1 + 0.8 * S.swingA / CW.G + (S.phase === 'up' && S.hy < S.liftFrom + 0.03 ? 0.25 : 0));
-  const hold = volts * S.fit;
-  if (hold < load) {
-    const lam = (S.phase === 'home' ? 6 : 2.5) * (load - hold) / load + 0.3;      // slip hazard per second (the limp carry bites hardest)
-    if (S.R() < lam * CW.DT) release(S, 'slip');
+  const carry = S.phase === 'home' || S.phase === 'drop_wait';
+  const volts = carry ? S.carry * (S.strong ? 1 : 1 + GRIP.WOBBLE * Math.sin(2 * Math.PI * GRIP.WOBBLE_HZ * S.t + S.wobPh)) : S.volts;
+  const lip = carry && Math.hypot(S.gx - CW.HOME[0], S.gz - CW.HOME[1]) < GRIP.LIP_R && (S.phase === 'drop_wait' || Math.hypot(S.cvx, S.cvz) < CW.SPEED * 0.9) ? GRIP.LIP_JOLT : 0;
+  const load = it.T.w * (1 + GRIP.SWING_LOAD * S.swingA / CW.G + (S.phase === 'up' && S.hy < S.liftFrom + 0.03 ? GRIP.LIFT_JERK : 0) + lip);
+  S.hold = volts * S.fit; S.load = load;
+  if (S.hold < load) {
+    const lam = (carry ? GRIP.SLIP_CARRY : GRIP.SLIP_LIFT) * (load - S.hold) / load + GRIP.SLIP_BASE;   // slip hazard per second
+    if (S.R() < lam * CW.DT) release(S, lip ? 'lip' : 'slip');
   }
 }
 
@@ -225,12 +313,23 @@ export function tick(S) {
       carriage(S, 0, 0);
       S.open = towards(S.open, 1, dt / 0.3); S.vy = -CW.DOWN; S.hy += S.vy * dt;
       const [hx, , hz] = head(S); let touch = tipY(S) <= 0.012 || S.hy <= CW.HUB + CW.PRONG + 0.005;
+      { // AIM = where the claw was when it first met each prize (before the descent shoves it): grip-point offsets
+        const balls = clawBalls(S);
+        for (const it of S.items) {
+          if (it.state !== 'pit' || S.firstTouch.has(it.id) || Math.hypot(it.c[0] - hx, it.c[2] - hz) > 0.15) continue;
+          if (it.p.some((p) => balls.some((b) => Math.hypot(p.x - b[0], p.y - b[1], p.z - b[2]) < p.r + b[3] + 0.004))) S.firstTouch.set(it.id, gripPoints(it).map((g) => Math.hypot(g[0] - hx, g[2] - hz)));
+        }
+      }
       for (const it of S.items) {                                                  // the hub sits down on a prize: the cable goes slack
         if (it.state !== 'pit') continue;
         for (const p of it.p) if (Math.hypot(p.x - hx, p.z - hz) < p.r + 0.02 && S.hy - CW.HUB * 0.4 - CW.HUB_R <= p.y + p.r * 0.9) touch = true;
       }
       if (S.stall >= 3) touch = true;                                              // the prongs stalled in the heap
-      if (touch) { S.phase = 'close'; S.ph = 0; S.vy = 0; S.stall = 0; S.svx *= 0.2; S.svz *= 0.2; S.events.push({ type: 'touch' }); }
+      if (touch) {
+        S.phase = 'close'; S.ph = 0; S.vy = 0; S.stall = 0; S.svx *= 0.2; S.svz *= 0.2; S.events.push({ type: 'touch' });
+        const [tx, , tz] = head(S);                                                // where the claw came down, per grip point
+        for (const it of S.items) if (it.state === 'pit' && !S.firstTouch.has(it.id) && Math.hypot(it.c[0] - tx, it.c[2] - tz) < 0.15) S.firstTouch.set(it.id, gripPoints(it).map((g) => Math.hypot(g[0] - tx, g[2] - tz)));
+      }
       break;
     }
     case 'close': {
@@ -317,7 +416,7 @@ function physics(S) {
       let n = 0;
       for (const t of T) if (it.p.some((p) => Math.hypot(p.x - t[0], p.y - t[1], p.z - t[2]) < p.r + CW.TIP_R + 0.012)) n++;
       if (n < 2) continue;
-      pinch.add(it); if (it.d0 == null) it.d0 = Math.hypot(hx - it.c[0], hz - it.c[2]);
+      pinch.add(it);
       const dx = hx - it.c[0], dz = hz - it.c[2], d = Math.hypot(dx, dz), m = Math.min(d, 0.0035 * n / 3);
       if (d > 1e-6) for (const p of it.p) { const ox = dx / d * m, oz = dz / d * m; p.x += ox; p.z += oz; p.px += ox; p.pz += oz; }
     }
@@ -329,8 +428,12 @@ function physics(S) {
         const Bi = live[b]; if (A.asleep && Bi.asleep) continue;
         const dcx = A.c[0] - Bi.c[0], dcz = A.c[2] - Bi.c[2], dcy = A.c[1] - Bi.c[1];
         if (dcx * dcx + dcy * dcy + dcz * dcz > 0.05) continue;                    // > 22 cm apart: no part can touch
-        const wa = A.asleep ? 0 : 1, wb = Bi.asleep ? 0 : 1, ws = wa + wb;
-        for (const p of A.p) for (const q of Bi.p) {
+        const wa = A.asleep ? 0 : 1, wb = Bi.asleep ? 0 : 1, ws = wa + wb, RA = A.T.bound, RB = Bi.T.bound;
+        if (Math.hypot(dcx, dcy, dcz) > RA + RB) continue;                          // their bounding spheres miss
+        for (const p of A.p) {
+          const ex = p.x - Bi.c[0], ey = p.y - Bi.c[1], ez = p.z - Bi.c[2], rb = RB + p.r;
+          if (ex * ex + ey * ey + ez * ez > rb * rb) continue;                       // this sphere cannot reach B
+          for (const q of Bi.p) {
           const dx = q.x - p.x, dy = q.y - p.y, dz = q.z - p.z, rr = p.r + q.r, d2 = dx * dx + dy * dy + dz * dz;
           if (d2 >= rr * rr || d2 < 1e-12) continue;
           const d = Math.sqrt(d2), k = (rr - d) / d / ws;
@@ -338,6 +441,7 @@ function physics(S) {
           if (wa === 0 && d < rr - 0.006) { A.asleep = false; A.sleep = 0; }
           p.x -= dx * k * wa; p.y -= dy * k * wa; p.z -= dz * k * wa; q.x += dx * k * wb; q.y += dy * k * wb; q.z += dz * k * wb;
           p.c = q.c = 1;
+          }
         }
       }
     }
