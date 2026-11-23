@@ -11,7 +11,7 @@
 //
 // PRIZES are rigid bodies made of a few spheres each (position-based dynamics + shape matching): they stack, slump,
 // tumble when dropped and settle; they sleep when still. The pool is the machine's own plush plus our games' prizes:
-// PATTY MELT pillows, GNOME GROVE gnomes, HIGH TABLE pucks and ER$N deed plaques (deeds, never cash).
+// PATTY MELT pillows, GNOME GROVE gnomes, HIGH TABLE pucks and framed ER$N TOWER photos (never cash).
 //
 // THE GRIP is a real machine's two-stage claw voltage: PICKUP strength while it closes and lifts, then CARRY strength
 // once it tops out (weak on most tries: the famous limp claw). The payout controller gives about one try in
@@ -55,10 +55,11 @@ export const GRIP = {
 
 // prize types: the COLLISION PROXY (local spheres [x, y, z, r], y up: a compound that hugs the model), the weight w,
 // soft (how far prongs dig in), and the GRIP PROFILE g:
-//   mu   friction (plush grips, vinyl less, a lacquered puck or plaque slides)
+//   mu   friction (plush grips, vinyl less, a lacquered puck or block slides)
 //   pts  grip points [x, y, z, tol, q]: where the prongs can actually close round it (tol = centring tolerance, q = quality)
 //   lie  [axis, flat q, edge q]: the local axis that is "up" when it lies the good way, and how well it holds each way
 const S2 = (a, r) => [[-a, 0, 0, r], [a, 0, 0, r]];
+const ring = (n, R, r) => Array.from({ length: n }, (_, i) => [+(R * Math.cos(2 * Math.PI * i / n)).toFixed(5), 0, +(R * Math.sin(2 * Math.PI * i / n)).toFixed(5), r]);
 export const TYPES = {
   sheep: { name: 'ATTENTION SHEEP', parts: S2(0.03, 0.047), w: 0.92, soft: 0.18, theme: true,
     g: { mu: 1.0, pts: [[0, 0, 0, 0.035, 1], [-0.032, 0, 0, 0.022, 0.7], [0.032, 0, 0, 0.022, 0.7]], lie: null } },
@@ -76,10 +77,18 @@ export const TYPES = {
     parts: [[0.026, -0.03, 0.0, 0.009], [0.0225, -0.03, 0.013, 0.009], [0.013, -0.03, 0.0225, 0.009], [0.0, -0.03, 0.026, 0.009], [-0.013, -0.03, 0.0225, 0.009], [-0.0225, -0.03, 0.013, 0.009], [-0.026, -0.03, 0.0, 0.009], [-0.0225, -0.03, -0.013, 0.009], [-0.013, -0.03, -0.0225, 0.009], [-0.0, -0.03, -0.026, 0.009], [0.013, -0.03, -0.0225, 0.009], [0.0225, -0.03, -0.013, 0.009],
       [0, -0.012, 0, 0.025], [0, 0.004, 0, 0.022], [-0.01, 0.018, 0, 0.021], [-0.022, 0.028, 0, 0.011], [0, 0.046, 0, 0.02], [0, 0.066, 0, 0.014]],
     g: { mu: 0.86, pts: [[0, 0.012, 0, 0.034, 1], [-0.004, 0.032, 0, 0.024, 0.8], [0, 0.058, 0, 0.015, 0.45]], lie: [1, 0.95, 1.0] } },
-  puck: { name: 'HIGH TABLE PUCK', parts: [[0, 0, 0, 0.017], [0.032, 0, 0, 0.017], [-0.032, 0, 0, 0.017], [0, 0, 0.032, 0.017], [0, 0, -0.032, 0.017]], w: 0.85, soft: 0.6, size: [0.1, 0.034, 0.1],
-    g: { mu: 0.85, pts: [[0, 0, 0, 0.028, 1]], lie: [1, 1.0, 0.75] } },
-  deed: { name: 'ER$N DEED PLAQUE', parts: [[-0.025, 0, -0.04, 0.017], [-0.025, 0, 0, 0.017], [-0.025, 0, 0.04, 0.017], [0.025, 0, -0.04, 0.017], [0.025, 0, 0, 0.017], [0.025, 0, 0.04, 0.017]], w: 0.72, soft: 0.6, size: [0.085, 0.03, 0.12],
-    g: { mu: 0.72, pts: [[0, 0, 0, 0.028, 1], [0, 0, -0.035, 0.02, 0.75], [0, 0, 0.035, 0.02, 0.75]], lie: [1, 1.0, 0.75] } },
+  // HIGH TABLE PUCK (1123 re-cut: 0.1 across, 0.034 thick, a ROUNDED rim): the page builds it as two logo discs on a
+  // torus, i.e. a sphere swept round a circle - exactly what a centre + inner ring of 8 + outer ring of 16 spheres hugs
+  puck: { name: 'HIGH TABLE PUCK', w: 0.85, soft: 0.6, size: [0.1, 0.034, 0.1],
+    parts: [[0, 0, 0, 0.017], ...ring(8, 0.0165, 0.017), ...ring(16, 0.033, 0.017)],
+    g: { mu: 0.88, pts: [[0, 0, 0, 0.032, 1]], lie: [1, 1.0, 0.92] } },   // 1123: Joe could not land it at all - eased to the gnome's level
+  // ER$N TOWER PHOTO (1123, Joe: "a framed photo of the tower with the name of the game"; replaces the deed plaque -
+  // ER$N has no deed mechanic): a gold frame 0.10 x 0.13, 0.022 thick, printed both faces, its edges rounded (r 0.011).
+  // Proxy: a 5 x 7 bed of spheres r 0.013 on its mid-plane (every vertex within ~4.5 mm, test/proxy_check.mjs).
+  // Lying flat it is a fair grab; stood on its edge the prongs only find the rim.
+  photo: { name: 'ER$N TOWER PHOTO', w: 0.74, soft: 0.5, size: [0.1, 0.022, 0.13], round: 0.011,
+    parts: Array.from({ length: 35 }, (_, i) => [+(-0.039 + (i % 5) * 0.0195).toFixed(4), 0, +(-0.054 + Math.floor(i / 5) * 0.018).toFixed(4), 0.013]),
+    g: { mu: 0.74, pts: [[0, 0, 0, 0.03, 1], [0, 0, -0.04, 0.02, 0.7], [0, 0, 0.04, 0.02, 0.7]], lie: [1, 1.0, 0.55] } },
 };
 // each type's bounding radius about its centroid (the pair test's broad phase)
 for (const T of Object.values(TYPES)) {
@@ -88,9 +97,9 @@ for (const T of Object.values(TYPES)) {
 }
 // each machine: its own plush in bulk + a few of the house prizes
 export const MACHINES = {
-  sheep: { name: 'ATTENTION SHEEP', mix: [['sheep', 14], ['patty', 3], ['gnome', 3], ['puck', 3], ['deed', 3]] },
-  cow: { name: 'SUCK UP', mix: [['cow', 13], ['patty', 3], ['gnome', 4], ['puck', 3], ['deed', 3]] },
-  crab: { name: 'BLUE CLAW SPECIAL', mix: [['crab', 14], ['patty', 3], ['gnome', 3], ['puck', 3], ['deed', 3]] },
+  sheep: { name: 'ATTENTION SHEEP', mix: [['sheep', 14], ['patty', 3], ['gnome', 3], ['puck', 3], ['photo', 3]] },
+  cow: { name: 'SUCK UP', mix: [['cow', 13], ['patty', 3], ['gnome', 4], ['puck', 3], ['photo', 3]] },
+  crab: { name: 'BLUE CLAW SPECIAL', mix: [['crab', 14], ['patty', 3], ['gnome', 3], ['puck', 3], ['photo', 3]] },
 };
 export const PLUSH = { sheep: { name: 'ATTENTION SHEEP', r: 0.066 }, cow: { name: 'SUCK UP', r: 0.072 }, crab: { name: 'BLUE CLAW SPECIAL', r: 0.07 } };
 

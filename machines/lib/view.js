@@ -94,7 +94,10 @@ export class LED {
     if (key === this.last) return; this.last = key;
     const { g, cv } = this; g.fillStyle = this.bg; g.fillRect(0, 0, cv.width, cv.height);
     // the unlit segments ghost behind (a real LED panel)
-    g.font = `700 ${sub ? cv.height * 0.56 : cv.height * 0.72}px "DIN Condensed","DIN Alternate","Arial Narrow",monospace`;
+    // 1123: long words (a prize's name on the win line) shrink to fit the panel instead of running off it
+    const fit = (px, weight, t) => { g.font = `${weight} ${px}px "DIN Condensed","DIN Alternate","Arial Narrow",monospace`; const m = g.measureText(t).width, room = cv.width * 0.92;
+      if (m > room) g.font = `${weight} ${Math.floor(px * room / m)}px "DIN Condensed","DIN Alternate","Arial Narrow",monospace`; };
+    fit(sub ? cv.height * 0.56 : cv.height * 0.72, 700, text);
     g.textAlign = 'center'; g.textBaseline = 'middle';
     const y = sub ? cv.height * 0.40 : cv.height * 0.54;
     g.fillStyle = 'rgba(255,255,255,0.05)'; g.fillText('8'.repeat(Math.min(10, text.length)), cv.width / 2, y);
@@ -102,7 +105,7 @@ export class LED {
       g.shadowColor = this.color; g.shadowBlur = 12; g.fillStyle = this.color; g.fillText(text, cv.width / 2, y);
       g.shadowBlur = 0; g.fillStyle = '#fff6'; g.fillText(text, cv.width / 2, y);
     }
-    if (sub) { g.font = `600 ${cv.height * 0.24}px "DIN Condensed","Arial Narrow",monospace`; g.fillStyle = this.color; g.globalAlpha = 0.8; g.fillText(sub, cv.width / 2, cv.height * 0.84); g.globalAlpha = 1; }
+    if (sub) { fit(cv.height * 0.24, 600, sub); g.fillStyle = this.color; g.globalAlpha = 0.8; g.fillText(sub, cv.width / 2, cv.height * 0.84); g.globalAlpha = 1; }
     this.tex.needsUpdate = true;
   }
 }

@@ -57,8 +57,8 @@ const shelfG = new THREE.Group(); scene.add(shelfG);
 
 async function boot() {
   const tl = new THREE.TextureLoader(), tex = (u) => new Promise((r, j) => tl.load(u, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; r(t); }, undefined, j));
-  const [cab, pl, gn, tPatty, tPuck, tDeed] = await Promise.all([loadGLB(`assets/claw_${KIND}.glb`), loadGLB(`assets/plush_${KIND}.glb`), loadGLB('assets/prize_gnome.glb'),
-    tex('assets/prize_patty.webp'), tex('assets/prize_puck.webp'), tex('assets/prize_deed.webp')]);
+  const [cab, pl, gn, tPatty, tPuck, tPhoto] = await Promise.all([loadGLB(`assets/claw_${KIND}.glb`), loadGLB(`assets/plush_${KIND}.glb`), loadGLB('assets/prize_gnome.glb'),
+    tex('assets/prize_patty.webp'), tex('assets/prize_puck.webp'), tex('assets/prize_photo.webp')]);
   scene.add(cab); fixMaterials(cab, { cast: false, emissive: 1.4 }); N = byName(cab);
   for (const k of ['claw_head', 'claw_cable', 'gantry_carriage', 'gantry_bridge', 'claw_prong0', 'claw_prong1', 'claw_prong2', 'joy_stick', 'joy_ball'])
     N[k] && N[k].traverse((o) => { if (o.isMesh) o.castShadow = true; });
@@ -86,17 +86,38 @@ async function boot() {
     const side = fab(null), m = new THREE.Mesh(geo, [side, side, side, side, fab(tPatty), fab(tPatty)]); m.castShadow = m.receiveShadow = true;
     const g = new THREE.Group(); g.add(m); PROTO.patty = g;
   }
-  { // HIGH TABLE puck: the BEES face top and bottom, the yellow rim
-    const [w, h] = TYPES.puck.size, face = new THREE.MeshStandardMaterial({ map: tPuck, roughness: 0.35, metalness: 0.1 });
-    const rim = new THREE.MeshStandardMaterial({ color: 0xe8d400, emissive: 0x3a3000, roughness: 0.4 });
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(w / 2, w / 2, h, 40), [rim, face, face]); m.castShadow = m.receiveShadow = true;
-    const g = new THREE.Group(); g.add(m); PROTO.puck = g;
+  { // HIGH TABLE PUCK (1123 re-cut so it reads in the cab): the BEES logo face up AND down, a black sticker ring
+    // lettered HIGH TABLE round it, and a fat glowing yellow rounded rim (a torus: the shape its sphere rings hug, lib/claw.js)
+    const R = 0.033, t = 0.017, cv = document.createElement('canvas'); cv.width = cv.height = 512; const c = cv.getContext('2d');
+    c.fillStyle = '#0b0b0d'; c.beginPath(); c.arc(256, 256, 256, 0, 7); c.fill();
+    c.save(); c.beginPath(); c.arc(256, 256, 186, 0, 7); c.clip(); c.drawImage(tPuck.image, 256 - 206, 256 - 206, 412, 412); c.restore();
+    c.strokeStyle = '#ffd400'; c.lineWidth = 8; c.beginPath(); c.arc(256, 256, 190, 0, 7); c.stroke(); c.beginPath(); c.arc(256, 256, 250, 0, 7); c.stroke();
+    c.fillStyle = '#ffe23a'; c.font = '700 44px "DIN Condensed","Arial Narrow",sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    const ringTxt = 'HIGH TABLE ★ HIGH TABLE ★ ';
+    for (let k = 0; k < ringTxt.length; k++) { const a = (k / ringTxt.length) * Math.PI * 2; c.save(); c.translate(256 + 220 * Math.sin(a), 256 - 220 * Math.cos(a)); c.rotate(a); c.fillText(ringTxt[k], 0, 0); c.restore(); }
+    const tFace = new THREE.CanvasTexture(cv); tFace.colorSpace = THREE.SRGBColorSpace; tFace.anisotropy = 4;
+    const face = new THREE.MeshStandardMaterial({ map: tFace, emissiveMap: tFace, emissive: 0x4a4a4a, roughness: 0.3, metalness: 0.05 });
+    const rim = new THREE.MeshStandardMaterial({ color: 0xffd000, emissive: 0xa07800, roughness: 0.3, metalness: 0.1 });
+    const g = new THREE.Group(), tor = new THREE.Mesh(new THREE.TorusGeometry(R, t, 16, 56), rim); tor.rotation.x = Math.PI / 2; g.add(tor);
+    for (const sgn of [1, -1]) { const d = new THREE.Mesh(new THREE.CircleGeometry(R + 0.0005, 56), face); d.rotation.x = -sgn * Math.PI / 2; d.position.y = sgn * (t + 0.0002); g.add(d); }
+    g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); PROTO.puck = g;
   }
-  { // ER$N DEED plaque: the certificate on a lacquered wood block (deeds, never cash)
-    const [w, h, d] = TYPES.deed.size, wood = new THREE.MeshStandardMaterial({ color: 0x6a3a1a, roughness: 0.45, metalness: 0.05 });
-    const top = new THREE.MeshStandardMaterial({ map: tDeed, roughness: 0.5 }), gold = new THREE.MeshStandardMaterial({ color: 0xc9a040, roughness: 0.3, metalness: 0.8 });
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [wood, wood, top, gold, wood, wood]); m.castShadow = m.receiveShadow = true;
-    const g = new THREE.Group(); g.add(m); PROTO.deed = g;
+  { // ER$N TOWER PHOTO (1123: replaces the deed plaque, which read as a small brown box - and ER$N has no deed
+    // mechanic). The ER$N TOWER at golden hour, roof on fire, matted over the ER$N wordmark in a gold frame; printed both
+    // faces (no brown backing to read as a box), the rounded gold edge self-lit. Shape = its 35-sphere bed (lib/claw.js
+    // TYPES.photo; test/proxy_check.mjs rebuilds these same vertices).
+    const [w, h, d] = TYPES.photo.size, rr = TYPES.photo.round, geo = new THREE.BoxGeometry(w, h, d, 16, 4, 20), P = geo.attributes.position;
+    const ix = w / 2 - rr, iy = h / 2 - rr, iz = d / 2 - rr;
+    for (let i = 0; i < P.count; i++) {
+      const x = P.getX(i), y = P.getY(i), z = P.getZ(i), cx = Math.max(-ix, Math.min(ix, x)), cy = Math.max(-iy, Math.min(iy, y)), cz = Math.max(-iz, Math.min(iz, z));
+      const nx = x - cx, ny = y - cy, nz = z - cz, n = Math.hypot(nx, ny, nz) || 1; P.setXYZ(i, cx + nx / n * rr, cy + ny / n * rr, cz + nz / n * rr);
+    }
+    geo.computeVertexNormals();
+    const face = new THREE.MeshStandardMaterial({ map: tPhoto, emissiveMap: tPhoto, emissive: 0x505050, roughness: 0.3, metalness: 0.05 });
+    const back = face.clone(); back.map = tPhoto.clone(); back.map.center.set(0.5, 0.5); back.map.rotation = Math.PI; back.map.needsUpdate = true; back.emissiveMap = back.map;
+    const gold = new THREE.MeshStandardMaterial({ color: 0xf0c050, emissive: 0x8a6418, roughness: 0.3, metalness: 0.6 });
+    const m = new THREE.Mesh(geo, [gold, gold, face, back, gold, gold]); m.castShadow = m.receiveShadow = true;
+    const g = new THREE.Group(); g.add(m); PROTO.photo = g;
   }
   led = new LED(N.led_credits, { color: LEDCOL[0], bg: LEDCOL[1] }); ledT = new LED(N.led_timer, { color: LEDCOL[0], bg: LEDCOL[1] });
   // the prongs: remember each one's rest pose relative to the hub, so it can swing open about its hinge
@@ -226,7 +247,7 @@ function tickFrame(dt, now, draw = true) {
     else if (e.type === 'miss') { snd.tone(180, 0.3, 'sawtooth', 0.08, 0, 0.6); say('MISSED', 'AIM THE MIDDLE', 1.6); }
     else if (e.type === 'weak') snd.tone(90, 0.25, 'sawtooth', 0.05, 0, 0.7);        // the claw goes limp at the top
     else if (e.type === 'win') {
-      snd.fanfare(); snd.chute(); flash = 3.2; glow = 1; winCam = 1.6; lastWin = e.name; say('WINNER', '', 3.2);
+      snd.fanfare(); snd.chute(); flash = 3.2; glow = 1; winCam = 1.6; lastWin = e.name; say('WINNER', e.name, 3.2);   // 1123: the win line names the prize (players learn what each one is)
       const o = objs.get(e.id);
       if (o) {                                      // the prize pops down the chute: it rides an unrotated wrap (the smear stretch is world-vertical)
         objs.delete(e.id); const w = new THREE.Group(); w.position.copy(o.position); o.position.set(0, 0, 0); w.add(o); scene.add(w);
@@ -293,7 +314,7 @@ function tickFrame(dt, now, draw = true) {
   rim.intensity = 3 + 14 * glow * (0.6 + 0.4 * Math.sin(now / 45)); lamp.intensity = 9 + 10 * glow;
   // LEDs: the machine's own panels
   flash = Math.max(0, flash - dt);
-  if (flash > 0) led.set('WINNER', lastWin, Math.floor(now / 160) % 2 === 0);
+  if (flash > 0) led.set(lastWin, Math.floor(now / 160) % 2 === 0 ? 'WINNER' : '- WINNER -');   // the name holds steady, the sub flickers
   else if (S.credits <= 0 && S.phase === 'idle') led.set('INSERT', 'TOKEN', Math.floor(now / 500) % 2 === 0);
   else led.set('TOKENS ' + S.credits, S.wins ? 'WON ' + S.wins : '');
   if (ledMsg) { ledMsg.t -= dt; if (ledMsg.t <= 0) ledMsg = null; }
@@ -309,6 +330,7 @@ function tickFrame(dt, now, draw = true) {
   const a = peekT * 0.75;
   camera.position.set(tgt.x + Math.sin(a) * dist, ZOOM ? B + 0.62 : 1.55 + peekT * 0.1 - 0.12 * wc, Math.cos(a) * dist);
   camera.lookAt(tgt);
+  if (window.__camLook) { const [p, l] = window.__camLook; camera.position.set(...p); camera.lookAt(...l); }   // shot harness close-ups only
   const smearNow = headSmear.on || prongs.some((p) => p.smear.on) || falling.some((f) => f.gh.on);
   if (draw || smearNow) R.render(scene, camera);
   let sm = headSmear.tick() ? 1 : 0;                                     // smears live 1-2 drawn frames
@@ -322,7 +344,11 @@ requestAnimationFrame(frameLoop);
 let simNow = 0;
 window.__advance = (n = 1, dt = 1 / 30, stopOnSmear = false) => { for (let i = 0; i < n; i++) { simNow += dt * 1000; const sm = tickFrame(dt, simNow, i === n - 1 || !stopOnSmear); if (stopOnSmear && sm) return { stop: i + 1, smear: true, v: S.phase }; } return stopOnSmear ? { stop: n, smear: false, v: S.phase } : S.phase; };
 boot().catch((e) => { document.getElementById('load').textContent = 'OUT OF ORDER · ' + e.message; console.error(e); });
-window.__claw = () => S;                       // headless check hooks
+window.__claw = () => S;
+// the LED panels' own origin is the cab's (Blender panels), so aim at their boxes (shot harness)
+window.__ledAt = () => { const v = new THREE.Box3().setFromObject(N.led_credits).getCenter(new THREE.Vector3()), u = new THREE.Box3().setFromObject(N.led_timer).getCenter(new THREE.Vector3());
+  return { at: v.add(u).multiplyScalar(0.5).toArray(), text: [led.last, ledT.last] }; };
+window.__objAt = (id) => { const o = objs.get(id); return o ? o.getWorldPosition(new THREE.Vector3()).toArray() : null; };   // a prize's place in the world (close-up shots)                       // headless check hooks
 window.__clawAPI = { insert, joystick, dropClaw, aimPoint, swing, head, CW, TYPES };
 window.__cardClear = () => {                   // the tilted card vs every cab mesh: sample its face, test each mesh's box
   const card = window.__card, out = new Set(), P = new THREE.Vector3(), bb = new THREE.Box3(), meshes = [];

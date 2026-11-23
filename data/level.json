@@ -2875,6 +2875,10 @@
     {
      "label": "PLAY ER$N",
      "url": "https://anderspartnersck.github.io/ERSN/"
+    },
+    {
+     "label": "PLAY THE ER$N PUSHER",
+     "url": "machines/gnome_pusher.html?m=ersn"
     }
    ],
    "frames": 0

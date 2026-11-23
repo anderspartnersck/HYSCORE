@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>GNOME PUSHER · HYSCORE</title>
-<meta name="description" content="GNOME PUSHER: the HYSCORE gnome-grove coin pusher. Aim the drop, time the mushroom gate, push coins, win tickets and gnomes.">
+<meta name="description" content="GNOME PUSHER (and ?m=ersn: the ER$N PUSHER): HYSCORE coin pushers. Aim the drop, time the gate, push coins, win tickets and prize figures.">
 <style>
   html,body{margin:0;height:100%;background:#05030a;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
   canvas{display:block;width:100vw;height:100vh;cursor:crosshair}
@@ -20,11 +20,21 @@
 <div id="load">BLACKLIGHT WARMING…</div>
 <script type="module">
 import { THREE, makeRenderer, loadGLB, byName, fixMaterials, LED, placard, Sound, backLink, ghostOf, Smear } from './lib/view.js';
-import { createPusher, drop, step, addCredits, GP, pfAt, gateAt } from './lib/pusher.js';
+import { createPusher, drop, step, addCredits, GP, pfAt, gateAt, PUSHERS } from './lib/pusher.js';
 
 const Q = new URLSearchParams(location.search);
 const SEED = +(Q.get('seed') || (Date.now() % 1e9));
-const STEP = Q.has('step');                    // test harness: frames advance only through window.__advance (fixed dt)
+const STEP = Q.has('step');
+// 1123: ?m=ersn = the ER$N PUSHER (same lib, same payout): HYSCORE GATEWAY grade, a TOWER REPLICA prize, a lit tower
+// window for the gate and four window lamps for the 4-lamp bonus
+const MK = Q.get('m') === 'ersn' ? 'ersn' : 'gnome', MP = PUSHERS[MK], ER = MK === 'ersn';
+const SK = ER ? { glb: 'ersn_pusher', prize: 'prize_tower', bg: 0x06120d, dots: ['#e2b652', '#ffe08c', '#5ab4a4', '#f0c060', '#2e7a66'], hemi: [0xffd9a0, 0x08160f, 0.75],
+    key: 0xffc070, front: 0xffe6c0, ledC: ['#ffc860', '#140c02'], ledT: ['#5af0c8', '#021410'], load: 'GOLDEN HOUR WARMING…', shelf: [0x1c3a2c, 0x0a1e14],
+    card: [['AIM  ·  MOUSE / ARROWS / TAP', 'DROP  ·  CLICK / SPACE', 'LIGHT 4 TOWER WINDOWS = ER$N BONUS'], { title: 'ER$N PUSHER', accent: '#8a6418', bg: '#f6eed6' }] }
+  : { glb: 'gnome_pusher', prize: 'prize_gnome', bg: 0x04020a, dots: ['#b36bff', '#53ff8a', '#ff3fb4', '#ffc440', '#40c8ff'], hemi: [0x7a4cff, 0x0a0418, 0.7],
+    key: 0x8a4dff, front: 0xd8c8ff, ledC: ['#53ff8a', '#03120a'], ledT: ['#ffc440', '#140c02'], load: 'BLACKLIGHT WARMING…', shelf: [0x24123a, 0x12061e],
+    card: [['AIM  ·  MOUSE / ARROWS / TAP', 'DROP  ·  CLICK / SPACE', 'THROUGH THE MUSHROOM = GNOME BONUS'], { title: 'GNOME PUSHER', accent: '#7a2bd8', bg: '#efe3ff' }] };
+if (ER) { document.title = 'ER$N PUSHER · HYSCORE'; document.getElementById('load').textContent = SK.load; }                    // test harness: frames advance only through window.__advance (fixed dt)
 backLink(document.getElementById('back'));
 
 // logic (x, depth-from-lip y, tier, layer) -> world (glTF: front = +Z)
@@ -33,30 +43,31 @@ const wz = (y) => -(LY + y);
 const wy = (tier, layer) => (tier ? SHELF : DECK) + CT / 2 + layer * CT + 0.0004;
 
 const canvas = document.getElementById('c'), R = makeRenderer(canvas), scene = new THREE.Scene();
-scene.background = new THREE.Color(0x04020a); scene.fog = new THREE.Fog(0x04020a, 3.5, 8);
+scene.background = new THREE.Color(SK.bg); scene.fog = new THREE.Fog(SK.bg, 3.5, 8);
 const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 30);
 const snd = new Sound();
 
 // the grove's blacklight: UV-violet wash, the glowing confetti carpet, a warm work-light over the coins
 const cv = document.createElement('canvas'); cv.width = cv.height = 512; const g2 = cv.getContext('2d');
-g2.fillStyle = '#07040f'; g2.fillRect(0, 0, 512, 512);
-for (let i = 0; i < 900; i++) { g2.fillStyle = ['#b36bff', '#53ff8a', '#ff3fb4', '#ffc440', '#40c8ff'][i % 5]; g2.globalAlpha = Math.random() * 0.8; g2.beginPath(); g2.arc(Math.random() * 512, Math.random() * 512, Math.random() * 2 + 0.5, 0, 7); g2.fill(); }
+g2.fillStyle = ER ? '#07140e' : '#07040f'; g2.fillRect(0, 0, 512, 512);
+for (let i = 0; i < 900; i++) { g2.fillStyle = SK.dots[i % 5]; g2.globalAlpha = Math.random() * 0.8; g2.beginPath(); g2.arc(Math.random() * 512, Math.random() * 512, Math.random() * 2 + 0.5, 0, 7); g2.fill(); }
 const ct = new THREE.CanvasTexture(cv); ct.wrapS = ct.wrapT = THREE.RepeatWrapping; ct.repeat.set(6, 6); ct.colorSpace = THREE.SRGBColorSpace;
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshStandardMaterial({ map: ct, emissiveMap: ct, emissive: 0xffffff, emissiveIntensity: 0.35, roughness: 0.95 }));
 floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
-scene.add(new THREE.HemisphereLight(0x7a4cff, 0x0a0418, 0.7));
-const uv = new THREE.PointLight(0x8a4dff, 6, 5); uv.position.set(0.8, 2.4, 1.6); scene.add(uv);
+scene.add(new THREE.HemisphereLight(...SK.hemi));
+const uv = new THREE.PointLight(SK.key, 6, 5); uv.position.set(0.8, 2.4, 1.6); scene.add(uv);
 const work = new THREE.SpotLight(0xffe2b0, 7, 2.2, 0.7, 0.5, 1.2); work.position.set(0, 1.52, -0.1); work.target.position.set(0, DECK, 0.1);
 work.castShadow = true; work.shadow.mapSize.set(1024, 1024); work.shadow.bias = -0.0005; scene.add(work, work.target);
-const front = new THREE.DirectionalLight(0xd8c8ff, 0.5); front.position.set(0.5, 2, 3); scene.add(front);
+const front = new THREE.DirectionalLight(SK.front, 0.5); front.position.set(0.5, 2, 3); scene.add(front);
 
 let N, S, ledC, ledT, coinIM, coinGeo, coinMat, gnomeProto, ready = false, aimX = 0, carX = 0, bonusFlash = 0, bonusName = '';
 const gnomes = new Map(), fx = [], trayCoins = [], won = [];
 const MAXC = 1100;
 
 async function boot() {
-  const [cab, coin, gn] = await Promise.all([loadGLB('assets/gnome_pusher.glb'), loadGLB('assets/coin.glb'), loadGLB('assets/prize_gnome.glb')]);
+  const [cab, coin, gn] = await Promise.all([loadGLB(`assets/${SK.glb}.glb`), loadGLB('assets/coin.glb'), loadGLB(`assets/${SK.prize}.glb`)]);
   scene.add(cab); fixMaterials(cab, { cast: false, emissive: 1.2 }); N = byName(cab);
+  for (let k = 0; k < 4; k++) N['lamp_' + k] && N['lamp_' + k].traverse((o) => { if (o.isMesh) o.material = o.material.clone(); });   // each window lamp lights on its own
   N.pusher_lo && N.pusher_lo.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   let cm = null; coin.traverse((o) => { if (o.isMesh && !cm) cm = o; });
   coinGeo = cm.geometry.clone();
@@ -65,9 +76,9 @@ async function boot() {
   coinIM = new THREE.InstancedMesh(coinGeo, coinMat, MAXC); coinIM.castShadow = true; coinIM.receiveShadow = true; coinIM.frustumCulled = false; scene.add(coinIM);
   gn.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
   const gb = new THREE.Box3().setFromObject(gn); gnomeProto = gn; gnomeProto.userData.y0 = -gb.min.y;
-  ledC = new LED(N.led_credits, { color: '#53ff8a', bg: '#03120a' }); ledT = new LED(N.led_tickets, { color: '#ffc440', bg: '#140c02' });
+  ledC = new LED(N.led_credits, { color: SK.ledC[0], bg: SK.ledC[1] }); ledT = new LED(N.led_tickets, { color: SK.ledT[0], bg: SK.ledT[1] });
   // the printed card by the coin slot
-  const card = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.13), new THREE.MeshStandardMaterial({ map: placard(['AIM  ·  MOUSE / ARROWS / TAP', 'DROP  ·  CLICK / SPACE', 'THROUGH THE MUSHROOM = GNOME BONUS'], { title: 'GNOME PUSHER', accent: '#7a2bd8', bg: '#efe3ff' }), roughness: 0.7, emissive: 0x302040, emissiveIntensity: 0.4 }));
+  const card = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.13), new THREE.MeshStandardMaterial({ map: placard(...SK.card), roughness: 0.7, emissive: ER ? 0x302818 : 0x302040, emissiveIntensity: 0.4 }));
   card.position.set(-0.18, 0.74, 0.482); scene.add(card);
   // ticket tape (grows as it prints; click it to tear it off)
   const tc = document.createElement('canvas'); tc.width = 64; tc.height = 128; const tg = tc.getContext('2d');
@@ -78,9 +89,9 @@ async function boot() {
   tape = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 1), new THREE.MeshStandardMaterial({ map: tt, roughness: 0.8, side: THREE.DoubleSide }));
   tape.geometry.translate(0, -0.5, 0); tape.position.set(0.28, 0.82, 0.486); tape.scale.y = 0.0001; scene.add(tape);
   // the gnome prize shelf beside the cab
-  const sh = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.025, 0.24), new THREE.MeshStandardMaterial({ color: 0x24123a, roughness: 0.6, emissive: 0x12061e }));
+  const sh = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.025, 0.24), new THREE.MeshStandardMaterial({ color: SK.shelf[0], roughness: 0.6, emissive: SK.shelf[1] }));
   sh.position.set(-0.75, 1.0, 0.1); scene.add(sh);
-  S = createPusher(SEED);
+  S = createPusher(SEED, { machine: MK });
   ready = true; document.getElementById('load').remove(); resize();
 }
 let tape = null, tapeTickets = 0, banked = 0;
@@ -153,7 +164,7 @@ function tickFrame(dt, now, draw = true) {
     if (e.type === 'win') {
       wins++;
       fx.push({ kind: e.kind, t: 0, x: e.x, y: wy(0, e.layer), z: wz(0), vz: 0.5 + Math.random() * 0.2, vx: (Math.random() - 0.5) * 0.15, vy: 0.05, to: 'tray', id: e.id });
-      if (e.kind === 'gnome') { snd.fanfare(); bonusFlash = 2.5; bonusName = 'GNOME WON +' + GP.GNOME_TICKETS; }
+      if (e.kind === 'gnome') { snd.fanfare(); bonusFlash = 2.5; bonusName = MP.prize + ' WON +' + GP.GNOME_TICKETS; }
       tapeTickets += e.kind === 'gnome' ? GP.GNOME_TICKETS : GP.COIN_TICKETS;
     } else if (e.type === 'lost') {
       fx.push({ kind: e.kind, t: 0, x: e.x, y: wy(0, e.layer), z: wz(e.y), vx: Math.sign(e.x) * 0.25, vz: 0.05, vy: 0, to: 'gutter', id: e.id });
@@ -246,8 +257,9 @@ function tickFrame(dt, now, draw = true) {
   bonusFlash = Math.max(0, bonusFlash - dt);
   if (bonusFlash > 0) ledC.set(bonusName, '', Math.floor(now / 140) % 2 === 0);
   else if (S.credits <= 0) ledC.set('INSERT', 'COIN', Math.floor(now / 500) % 2 === 0);
-  else ledC.set('TOKENS ' + S.credits, lampFlash > 0 || lampN ? 'MUSHROOM ' + '■'.repeat(lampN) + '□'.repeat(GP.LAMPS - lampN) : S.gnomesWon ? 'GNOMES ' + S.gnomesWon : 'HIT THE MUSHROOM');
+  else ledC.set('TOKENS ' + S.credits, lampFlash > 0 || lampN ? MP.gate + ' ' + '■'.repeat(lampN) + '□'.repeat(GP.LAMPS - lampN) : S.gnomesWon ? MP.prizes + ' ' + S.gnomesWon : ER ? 'HIT THE WINDOW' : 'HIT THE MUSHROOM');
   lampFlash = Math.max(0, lampFlash - dt);
+  for (let k = 0; k < GP.LAMPS; k++) { const l = N['lamp_' + k]; if (l) l.traverse((o) => { if (o.isMesh && o.material.emissive) o.material.emissiveIntensity = bonusFlash > 0 ? 2 + 3 * Math.abs(Math.sin(now / 90 + k)) : k < lampN ? 4 : 0.6; }); }   // ER$N: the tower-window lamps
   if (N.bonus_gate && lampFlash > 0 && bonusFlash <= 0) N.bonus_gate.traverse((o) => { if (o.isMesh && o.material.emissive) o.material.emissiveIntensity = 1 + 2.5 * lampFlash; });
   ledT.set(String(S.tickets).padStart(4, '0'), banked ? 'BANKED ' + banked : 'TICKETS');
   // camera: a player leaning over the glass; it follows your aim a touch
@@ -255,6 +267,7 @@ function tickFrame(dt, now, draw = true) {
   const narrow = Math.max(0, 0.9 / camera.aspect - 0.62);
   const tgt = new THREE.Vector3(carX * 0.15, 0.97, 0.0);
   camera.position.set(carX * 0.25, 1.52 + narrow * 0.55, 0.92 + narrow * 0.9); camera.lookAt(tgt);
+  if (window.__camLook) { const [p, l] = window.__camLook; camera.position.set(...p); camera.lookAt(...l); }   // shot harness close-ups only
   const smearNow = smearing > 0 || [...gnomeFx.values()].some((x) => x.on);
   if (draw || smearNow) R.render(scene, camera);
   let sm = smearing; for (const [id, x] of gnomeFx) { if (x.tick()) sm++; else if (!ledge.has(id) && !x.on) { scene.remove(x.g); gnomeFx.delete(id); } }
@@ -266,7 +279,8 @@ requestAnimationFrame(loop);
 let simNow = 0;
 window.__advance = (n = 1, dt = 1 / 30, stopOnSmear = false) => { for (let i = 0; i < n; i++) { simNow += dt * 1000; const sm = tickFrame(dt, simNow, i === n - 1 || !stopOnSmear); if (stopOnSmear && sm) return { stop: i + 1, smear: true, v: S.t }; } return stopOnSmear ? { stop: n, smear: false, v: S.t } : S.t; };
 boot().catch((e) => { document.getElementById('load').textContent = 'OUT OF ORDER · ' + e.message; console.error(e); });
-window.__pusher = () => S;                     // headless check hook
+window.__pusher = () => S;
+window.__prizeAt = () => { for (const [id, g] of gnomes) return g.getWorldPosition(new THREE.Vector3()).toArray(); return null; };   // a prize figure on the deck (close-up shots)                     // headless check hook
 window.__pusherAPI = { drop, gateAt, GP };
 </script>
 </body>

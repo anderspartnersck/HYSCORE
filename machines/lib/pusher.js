@@ -31,6 +31,14 @@ const BONUS = [  // weight, outcome  (the GNOME BONUS wheel, spun when the last 
   [8, { name: 'WIN BIG', coins: 14 }], [2, { name: 'JACKPOT', coins: 30, gnome: 1 }],
 ];
 
+// 1123: two machines on this one lib, same physics + same payout (the batteries gate both). Only the names differ:
+// the "gnome" item kind is the machine's PRIZE FIGURE (GNOME PUSHER: a grove gnome; ER$N PUSHER: a TOWER REPLICA,
+// built on the same 2.6 cm base disc), the gate is a mushroom / a lit tower window, the bonus wheel's slots are renamed.
+export const PUSHERS = {
+  gnome: { name: 'GNOME PUSHER', prize: 'GNOME', prizes: 'GNOMES', gate: 'MUSHROOM', bonus: ['GNOME SHOWER', 'GNOME SHOWER', 'GNOME DROP', 'WIN BIG', 'JACKPOT'] },
+  ersn: { name: 'ER$N PUSHER', prize: 'TOWER', prizes: 'TOWERS', gate: 'WINDOWS', bonus: ['JUICE FLOWS', 'JUICE FLOWS', 'TOWER DROP', 'GOLDEN WALK', 'EXECUTIVE LOUNGE'] },
+};
+
 export function pfAt(t) { return GP.PF_MIN + (GP.PF_MAX - GP.PF_MIN) * (0.5 + 0.5 * Math.cos(2 * Math.PI * t / GP.PERIOD)); }
 export function gateAt(t) { return (GP.W / 2 - 0.05) * Math.sin(2 * Math.PI * t / GP.GATE_PERIOD); }
 
@@ -43,7 +51,7 @@ function item(kind, x, y, tier) {
 export function createPusher(seed = 1, opt = {}) {
   const R = rng(seed);
   const S = {
-    seed, R, t: 0, acc: 0, pf: GP.PF_MAX, gx: 0, items: [], pending: [], events: [], lamps: 0,
+    seed, R, M: PUSHERS[opt.machine] || PUSHERS.gnome, t: 0, acc: 0, pf: GP.PF_MAX, gx: 0, items: [], pending: [], events: [], lamps: 0,
     credits: opt.credits ?? GP.START_CREDITS, tickets: 0, gnomesWon: 0, lastDrop: -9,
     stats: { inserted: 0, house: 0, initial: 0, wonCoins: 0, lostCoins: 0, wonGnomes: 0, lostGnomes: 0, bonuses: 0, houseGnomes: 0, initialGnomes: 0, gatePasses: 0 },
   };
@@ -107,7 +115,7 @@ export function drop(S, x) {
 
 function bonus(S, x) {
   const b = S.R.pick(BONUS); S.stats.bonuses++;
-  S.events.push({ type: 'bonus', name: b.name, coins: b.coins || 0, gnome: b.gnome || 0, x });
+  S.events.push({ type: 'bonus', name: S.M.bonus[BONUS.findIndex((q) => q[1] === b)] || b.name, coins: b.coins || 0, gnome: b.gnome || 0, x });
   const lim = GP.W / 2 - GP.R - 0.004;
   for (let i = 0; i < (b.coins || 0); i++) {
     const xx = S.R.range(-lim, lim);
