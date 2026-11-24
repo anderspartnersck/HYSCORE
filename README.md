@@ -50,5 +50,4 @@ It saves nothing. Close the tab and HYSCORE forgets you.
 
 ## Credits
 
-Created by **Joseph Coleman**, with Claude, ChatGPT, and Blender.
-A Castle Killscreen game by Anders & Partners.
+Created by **Joseph Coleman**, Claude, ChatGPT, and Blender. Castle Killscreen · Anders & Partners.
