@@ -4,12 +4,14 @@
 // Nothing starts on its own: the walk begins only from ENTER THE ARCADE (or a MAP jump). Idle on the title/menu
 // returns to attract; idle while walking does nothing. In the walk: Esc = PAUSE (resume / map / settings / back to the
 // door / quit to title), M = MAP. SETTINGS: sound on/off, skip cut scenes. Session only (the web build saves nothing).
+// The MAP never shows the private stair or the Keep until you have been through the secret door.
 'use strict';
 (function () {
   const $ = (id) => document.getElementById(id);
   const W = () => window.WALK;
   let MODE = 'boot', idleT = 0, attractT = null, attractRaf = 0, lastInput = performance.now();
   const PUBLIC_TOUR = ['lobby', 'forest_mid', 'blacklight', 'grove_mid', 'food_court', 'palace_mid', 'palace_trasimene', 'window_area', 'hallway_mid', 'gateway', 'forest_entry', 'air_hockey'];
+  const SECRET = /^(stairs_|keep)/;
   // ---------------------------------------------------------------- sound (WebAudio, synthesized: blips + a low room tone)
   let AC = null, tone = null;
   function ac() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; } } return AC; }
@@ -81,16 +83,17 @@
   function closeSettings() { if (settingsFrom === 'pause') { MODE = 'pause'; show('s-pause'); focusFirst('s-pause'); } else menu(); }
   // ---------------------------------------------------------------- the map (jump to an area)
   const ZONE_COL = { 'LOBBY': '#ff3fb4', 'MERC ZEBRA ROW': '#ff3fb4', 'MAIN FLOOR': '#b36bff', "PATTY'S POP-UP": '#ff8a3d', 'BLACKLIGHT AREA': '#8a4dff',
-                     'GNOME GROVE': '#c36bff', 'HYSCORE FOREST': '#53ff8a', "COLEMAN'S PALACE": '#e6aa46', 'THE HALLWAY': '#d8b45a', 'HYSCORE GATEWAY': '#d8b45a' };
+                     'GNOME GROVE': '#c36bff', 'HYSCORE FOREST': '#53ff8a', "COLEMAN'S PALACE": '#e6aa46', 'THE HALLWAY': '#d8b45a', 'HYSCORE GATEWAY': '#d8b45a',
+                     'THE PRIVATE STAIRS': '#53ff8a', "COLEMAN'S KEEP": '#53ff8a' };
   let mapFrom = 'menu';
   function map(from) {
     mapFrom = from; MODE = 'map'; drawMap(); show('s-map'); blip('move');
   }
   function closeMap() { if (mapFrom === 'pause') { MODE = 'pause'; show('s-pause'); focusFirst('s-pause'); } else menu(); }
   function drawMap() {
-    const L = W().LEVEL, svg = $('map-svg');
-    const nodes = Object.values(L.nodes).filter((n) => n.id !== 'door');
-    const zones = L.zones || [];
+    const L = W().LEVEL, svg = $('map-svg'), seen = W().SEEN_SECRET;
+    const nodes = Object.values(L.nodes).filter((n) => n.id !== 'door' && (seen || !SECRET.test(n.id)));
+    const zones = (L.zones || []).filter((z) => seen || !z.secret);
     const xs = nodes.map((n) => n.pos[0]).concat(zones.flatMap((z) => [z.rect[0], z.rect[1]]));
     const ys = nodes.map((n) => n.pos[1]).concat(zones.flatMap((z) => [z.rect[2], z.rect[3]]));
     const x0 = Math.min(...xs) - 2, x1 = Math.max(...xs) + 2, y0 = Math.min(...ys) - 2, y1 = Math.max(...ys) + 2;

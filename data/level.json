@@ -450,7 +450,7 @@
      "exhibit": "PS_ht1up_cougars_0",
      "yaw": 334.47,
      "pitch": -6.3,
-     "label": "ONE-TIMER: THE HIGH TABLE — 1-UP (COUGARS)"
+     "label": "THE HIGH TABLE — 1-UP"
     }
    ],
    "nav": [
@@ -959,14 +959,14 @@
      "exhibit": "AH_rivalry",
      "yaw": 226.97,
      "pitch": -9.55,
-     "label": "ONE TIMER: THE HIGH TABLE"
+     "label": "THE HIGH TABLE"
     },
     {
      "kind": "inspect",
      "exhibit": "AH_nachos",
      "yaw": 180.0,
      "pitch": -13.63,
-     "label": "ONE TIMER: THE HIGH TABLE"
+     "label": "THE HIGH TABLE"
     }
    ],
    "nav": [
@@ -1090,14 +1090,14 @@
      "exhibit": "B_hivemind_0",
      "yaw": 335.32,
      "pitch": -9.46,
-     "label": "ONE-TIMER: THE HIGH TABLE — HIVEMIND EDITION"
+     "label": "THE HIGH TABLE — HIVEMIND EDITION"
     },
     {
      "kind": "inspect",
      "exhibit": "B_hightable_0",
      "yaw": 20.32,
      "pitch": -9.75,
-     "label": "ONE-TIMER: THE HIGH TABLE (2-player, bees + queens)"
+     "label": "THE HIGH TABLE (2-player, bees + queens)"
     }
    ],
    "nav": [
@@ -1818,9 +1818,9 @@
     },
     {
      "kind": "inspect",
-     "exhibit": "ROOM_palace_mid_0",
-     "yaw": 0,
-     "pitch": -6,
+     "exhibit": "C1_fogfire_0",
+     "yaw": 359.97,
+     "pitch": -3.15,
      "label": "FOG AND FIRE: THE LUNAR PACT"
     }
    ],
@@ -2323,11 +2323,21 @@
      "label": ""
     },
     {
+     "kind": "cut",
+     "to": "stairs_bottom",
+     "yaw": 0.0,
+     "pitch": -22.0,
+     "dist": 3.35,
+     "clip": "data/clips/cut_secret",
+     "label": "THE PRIVATE STAIRS",
+     "hidden": true
+    },
+    {
      "kind": "inspect",
      "exhibit": "F_ht1up_0",
      "yaw": 0.0,
      "pitch": -10.55,
-     "label": "ONE-TIMER: THE HIGH TABLE — 1-UP (HYSCORE)"
+     "label": "THE HIGH TABLE — 1-UP"
     }
    ],
    "nav": [
@@ -2348,6 +2358,298 @@
      "dist": 3.47,
      "yaw": 223.83,
      "aim": 223.83,
+     "pitch": -22.0
+    }
+   ]
+  },
+  "stairs_bottom": {
+   "id": "stairs_bottom",
+   "area": "THE PRIVATE STAIRS",
+   "pos": [
+    -19.2,
+    30.45,
+    1.6
+   ],
+   "heading": 0,
+   "pano": "data/pano/stairs_bottom.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "stairs_top",
+     "yaw": 2.2,
+     "pitch": 34.68,
+     "dist": 6.33,
+     "clip": "data/clips/stairs_bottom__stairs_top",
+     "label": ""
+    },
+    {
+     "kind": "walk",
+     "to": "onetimer_1up",
+     "yaw": 180.0,
+     "pitch": -22.0,
+     "dist": 3.35,
+     "clip": null,
+     "label": "HYSCORE FOREST"
+    }
+   ],
+   "nav": [
+    {
+     "kind": "room",
+     "to": "keep",
+     "label": "COLEMAN'S KEEP",
+     "sub": "",
+     "area": "COLEMAN'S KEEP",
+     "route": [
+      {
+       "to": "stairs_top",
+       "clip": "data/clips/stairs_bottom__stairs_top",
+       "yaw": 2.2,
+       "pitch": 34.68
+      },
+      {
+       "to": "keep",
+       "clip": "data/clips/stairs_top__keep",
+       "yaw": 229.76,
+       "pitch": -22.0
+      }
+     ],
+     "dist": 9.76,
+     "yaw": 2.2,
+     "pitch": 34.68
+    },
+    {
+     "kind": "room",
+     "to": "forest_mid",
+     "label": "HYSCORE FOREST",
+     "sub": "",
+     "area": "HYSCORE FOREST",
+     "route": [
+      {
+       "to": "onetimer_1up",
+       "clip": null,
+       "yaw": 180.0,
+       "pitch": -22.0
+      },
+      {
+       "to": "forest_mid",
+       "clip": "data/clips/onetimer_1up__forest_mid",
+       "yaw": 223.83,
+       "pitch": -22.0
+      }
+     ],
+     "dist": 6.82,
+     "yaw": 180.0,
+     "pitch": -22.0
+    }
+   ]
+  },
+  "stairs_top": {
+   "id": "stairs_top",
+   "area": "THE PRIVATE STAIRS",
+   "pos": [
+    -19.0,
+    35.65,
+    5.2
+   ],
+   "heading": 270,
+   "pano": "data/pano/stairs_top.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "stairs_bottom",
+     "yaw": 182.2,
+     "pitch": -34.68,
+     "dist": 6.33,
+     "clip": "data/clips/stairs_top__stairs_bottom",
+     "label": ""
+    },
+    {
+     "kind": "walk",
+     "to": "keep",
+     "yaw": 229.76,
+     "pitch": -22.0,
+     "dist": 3.43,
+     "clip": "data/clips/stairs_top__keep",
+     "label": "COLEMAN'S KEEP"
+    }
+   ],
+   "nav": [
+    {
+     "kind": "room",
+     "to": "forest_mid",
+     "label": "HYSCORE FOREST",
+     "sub": "",
+     "area": "HYSCORE FOREST",
+     "route": [
+      {
+       "to": "stairs_bottom",
+       "clip": "data/clips/stairs_top__stairs_bottom",
+       "yaw": 182.2,
+       "pitch": -34.68
+      },
+      {
+       "to": "onetimer_1up",
+       "clip": null,
+       "yaw": 180.0,
+       "pitch": -22.0
+      },
+      {
+       "to": "forest_mid",
+       "clip": "data/clips/onetimer_1up__forest_mid",
+       "yaw": 223.83,
+       "pitch": -22.0
+      }
+     ],
+     "dist": 13.15,
+     "yaw": 182.2,
+     "pitch": -34.68
+    },
+    {
+     "kind": "room",
+     "to": "keep",
+     "label": "COLEMAN'S KEEP",
+     "sub": "",
+     "area": "COLEMAN'S KEEP",
+     "route": [
+      {
+       "to": "keep",
+       "clip": "data/clips/stairs_top__keep",
+       "yaw": 229.76,
+       "pitch": -22.0
+      }
+     ],
+     "dist": 3.43,
+     "yaw": 229.76,
+     "pitch": -22.0
+    }
+   ]
+  },
+  "keep": {
+   "id": "keep",
+   "area": "COLEMAN'S KEEP",
+   "pos": [
+    -21.6,
+    33.45,
+    5.6
+   ],
+   "heading": 270,
+   "pano": "data/pano/keep.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "stairs_top",
+     "yaw": 49.76,
+     "pitch": -22.0,
+     "dist": 3.43,
+     "clip": "data/clips/keep__stairs_top",
+     "label": "THE PRIVATE STAIRS"
+    },
+    {
+     "kind": "walk",
+     "to": "keep_window",
+     "yaw": 206.57,
+     "pitch": -22.0,
+     "dist": 3.14,
+     "clip": "data/clips/keep__keep_window",
+     "label": ""
+    }
+   ],
+   "nav": [
+    {
+     "kind": "room",
+     "to": "forest_mid",
+     "label": "HYSCORE FOREST",
+     "sub": "",
+     "area": "HYSCORE FOREST",
+     "route": [
+      {
+       "to": "stairs_top",
+       "clip": "data/clips/keep__stairs_top",
+       "yaw": 49.76,
+       "pitch": -22.0
+      },
+      {
+       "to": "stairs_bottom",
+       "clip": "data/clips/stairs_top__stairs_bottom",
+       "yaw": 182.2,
+       "pitch": -34.68
+      },
+      {
+       "to": "onetimer_1up",
+       "clip": null,
+       "yaw": 180.0,
+       "pitch": -22.0
+      },
+      {
+       "to": "forest_mid",
+       "clip": "data/clips/onetimer_1up__forest_mid",
+       "yaw": 223.83,
+       "pitch": -22.0
+      }
+     ],
+     "dist": 16.58,
+     "yaw": 49.76,
+     "pitch": -22.0
+    },
+    {
+     "kind": "spot",
+     "to": "keep_window",
+     "label": "THE WINDOW",
+     "sub": "",
+     "area": "COLEMAN'S KEEP",
+     "route": [
+      {
+       "to": "keep_window",
+       "clip": "data/clips/keep__keep_window",
+       "yaw": 206.57,
+       "pitch": -22.0
+      }
+     ],
+     "dist": 3.14,
+     "yaw": 206.57,
+     "pitch": -22.0
+    }
+   ]
+  },
+  "keep_window": {
+   "id": "keep_window",
+   "area": "COLEMAN'S KEEP",
+   "pos": [
+    -23.0,
+    30.65,
+    5.3
+   ],
+   "heading": 180,
+   "pano": "data/pano/keep_window.webp",
+   "hotspots": [
+    {
+     "kind": "walk",
+     "to": "keep",
+     "yaw": 26.57,
+     "pitch": -22.0,
+     "dist": 3.14,
+     "clip": "data/clips/keep_window__keep",
+     "label": ""
+    }
+   ],
+   "nav": [
+    {
+     "kind": "room",
+     "to": "keep",
+     "label": "COLEMAN'S KEEP",
+     "sub": "",
+     "area": "COLEMAN'S KEEP",
+     "route": [
+      {
+       "to": "keep",
+       "clip": "data/clips/keep_window__keep",
+       "yaw": 26.57,
+       "pitch": -22.0
+      }
+     ],
+     "dist": 3.14,
+     "yaw": 26.57,
+     "aim": 26.57,
      "pitch": -22.0
     }
    ]
@@ -2451,6 +2753,10 @@
     {
      "label": "MERC ZEBRA — 3D EDITION",
      "url": "https://anderspartnersck.github.io/MERCZEBRA/3d.html"
+    },
+    {
+     "label": "DRIVE THE 101",
+     "url": "https://anderspartnersck.github.io/MERCZEBRA/POV%20DRIVE%20TEST.html?cab=101"
     }
    ],
    "frames": 13
@@ -2531,6 +2837,10 @@
     {
      "label": "MERC ZEBRA — 3D EDITION",
      "url": "https://anderspartnersck.github.io/MERCZEBRA/3d.html"
+    },
+    {
+     "label": "DRIVE THE 101",
+     "url": "https://anderspartnersck.github.io/MERCZEBRA/POV%20DRIVE%20TEST.html?cab=101"
     }
    ],
    "frames": 13
@@ -2601,8 +2911,8 @@
    "id": "AH_rivalry",
    "node": "air_hockey",
    "cab": null,
-   "title": "ONE TIMER: THE HIGH TABLE",
-   "game": "ONE TIMER: THE HIGH TABLE",
+   "title": "THE HIGH TABLE",
+   "game": "THE HIGH TABLE",
    "pitch": "Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
    "controls": null,
    "launch": [],
@@ -2619,8 +2929,8 @@
    "id": "AH_nachos",
    "node": "air_hockey",
    "cab": null,
-   "title": "ONE TIMER: THE HIGH TABLE",
-   "game": "ONE TIMER: THE HIGH TABLE",
+   "title": "THE HIGH TABLE",
+   "game": "THE HIGH TABLE",
    "pitch": "Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
    "controls": null,
    "launch": [],
@@ -2637,8 +2947,8 @@
    "id": "B_hivemind_0",
    "node": "ht_row",
    "cab": "hivemind",
-   "title": "ONE-TIMER: THE HIGH TABLE — HIVEMIND EDITION",
-   "game": "ONE TIMER: THE HIGH TABLE",
+   "title": "THE HIGH TABLE — HIVEMIND EDITION",
+   "game": "THE HIGH TABLE",
    "pitch": "Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
    "controls": "move = stick / mouse · GET BIG (team power) · TRAP (catch) · BLAST (fire it) · first to 7",
    "launch": [],
@@ -2655,8 +2965,8 @@
    "id": "B_hightable_0",
    "node": "ht_row",
    "cab": "hightable",
-   "title": "ONE-TIMER: THE HIGH TABLE (2-player, bees + queens)",
-   "game": "ONE TIMER: THE HIGH TABLE",
+   "title": "THE HIGH TABLE (2-player, bees + queens)",
+   "game": "THE HIGH TABLE",
    "pitch": "Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
    "controls": "move = stick / mouse · GET BIG (team power) · TRAP (catch) · BLAST (fire it) · first to 7",
    "launch": [],
@@ -2763,9 +3073,9 @@
    "id": "PS_ht1up_cougars_0",
    "node": "food_court",
    "cab": "ht1up_cougars",
-   "title": "ONE-TIMER: THE HIGH TABLE — 1-UP (COUGARS)",
-   "game": "ONE TIMER: THE HIGH TABLE",
-   "pitch": "THE STUDENT SECTION's own HIGH TABLE, in COUGARS navy. Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
+   "title": "THE HIGH TABLE — 1-UP",
+   "game": "THE HIGH TABLE",
+   "pitch": "Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
    "controls": "move = stick / mouse · GET BIG (team power) · TRAP (catch) · BLAST (fire it) · first to 7",
    "launch": [],
    "clip": "data/exhibits/PS_ht1up_cougars_0",
@@ -2813,6 +3123,10 @@
     {
      "label": "MERC ZEBRA — 3D EDITION",
      "url": "https://anderspartnersck.github.io/MERCZEBRA/3d.html"
+    },
+    {
+     "label": "DRIVE THE 101",
+     "url": "https://anderspartnersck.github.io/MERCZEBRA/POV%20DRIVE%20TEST.html?cab=101"
     }
    ],
    "frames": 13
@@ -2835,6 +3149,10 @@
     {
      "label": "MERC ZEBRA — 3D EDITION",
      "url": "https://anderspartnersck.github.io/MERCZEBRA/3d.html"
+    },
+    {
+     "label": "DRIVE THE 101",
+     "url": "https://anderspartnersck.github.io/MERCZEBRA/POV%20DRIVE%20TEST.html?cab=101"
     }
    ],
    "frames": 13
@@ -2843,12 +3161,13 @@
    "id": "F_ht1up_0",
    "node": "onetimer_1up",
    "cab": "ht1up",
-   "title": "ONE-TIMER: THE HIGH TABLE — 1-UP (HYSCORE)",
-   "game": "ONE TIMER: THE HIGH TABLE",
+   "title": "THE HIGH TABLE — 1-UP",
+   "game": "THE HIGH TABLE",
    "pitch": "Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
    "controls": "move = stick / mouse · GET BIG (team power) · TRAP (catch) · BLAST (fire it) · first to 7",
    "launch": [],
    "clip": "data/exhibits/F_ht1up_0",
+   "secret": true,
    "labs": [
     {
      "label": "PLAY THE HIGH TABLE",
@@ -2912,24 +3231,6 @@
    "launch": [],
    "clip": null,
    "labs": [],
-   "frames": 0
-  },
-  "ROOM_palace_mid_0": {
-   "id": "ROOM_palace_mid_0",
-   "node": "palace_mid",
-   "cab": null,
-   "title": "FOG AND FIRE: THE LUNAR PACT",
-   "game": "FOG AND FIRE",
-   "pitch": "Co-op mech action — pilots over machines, the hive says obey.",
-   "controls": null,
-   "launch": [],
-   "clip": null,
-   "labs": [
-    {
-     "label": "PLAY FOG AND FIRE",
-     "url": "https://anderspartnersck.github.io/FOG-FIRE/"
-    }
-   ],
    "frames": 0
   },
   "M_claw_sheep_0": {
@@ -3026,6 +3327,24 @@
     }
    ],
    "frames": 0
+  },
+  "C1_fogfire_0": {
+   "id": "C1_fogfire_0",
+   "node": "palace_mid",
+   "cab": "fogfire",
+   "title": "FOG AND FIRE: THE LUNAR PACT",
+   "game": "FOG AND FIRE",
+   "pitch": "A 1v1 mech fighting game: two suits, one pod. Combos, chains and specials on the moon's terms. (A stand-in cab until FOG AND FIRE gets its own.)",
+   "controls": "move / jump / crouch = stick · LIGHT · HEAVY · SPECIAL",
+   "launch": [],
+   "clip": "data/exhibits/C1_fogfire_0",
+   "labs": [
+    {
+     "label": "PLAY FOG AND FIRE",
+     "url": "https://anderspartnersck.github.io/FOG-FIRE/"
+    }
+   ],
+   "frames": 13
   }
  },
  "rooms": {
@@ -3052,6 +3371,10 @@
   "gateway": {
    "name": "HYSCORE GATEWAY",
    "sub": "THE EXECUTIVE LOUNGE · double-check your career"
+  },
+  "keep": {
+   "name": "COLEMAN'S KEEP",
+   "sub": "THE OFFICE · every cabinet is live"
   },
   "ext_101": {
    "name": "OFF THE 101",
@@ -3164,6 +3487,18 @@
    "onetimer_1up"
   ],
   [
+   "stairs_bottom",
+   "stairs_top"
+  ],
+  [
+   "stairs_top",
+   "keep"
+  ],
+  [
+   "keep",
+   "keep_window"
+  ],
+  [
    "ext_101",
    "ext_lot"
   ],
@@ -3177,6 +3512,11 @@
    "door",
    "lobby",
    "intro"
+  ],
+  [
+   "onetimer_1up",
+   "stairs_bottom",
+   "secret"
   ]
  ],
  "zones": [
@@ -3281,6 +3621,29 @@
     46.0,
     60.0
    ]
+  },
+  {
+   "area": "THE PRIVATE STAIRS",
+   "label": "STAIRS",
+   "rect": [
+    -20.1,
+    -16.4,
+    30.0,
+    36.4
+   ],
+   "secret": true,
+   "small": true
+  },
+  {
+   "area": "COLEMAN'S KEEP",
+   "label": "THE KEEP",
+   "rect": [
+    -28.5,
+    -20.1,
+    30.0,
+    40.7
+   ],
+   "secret": true
   }
  ],
  "note": "positions in metres (hall floor z=0, +y north).",
@@ -3296,6 +3659,7 @@
   "data/clips/crossroads__lobby_n": 19,
   "data/clips/crossroads__palace_entry": 19,
   "data/clips/cut_intro": 73,
+  "data/clips/cut_secret": 41,
   "data/clips/door__ext_lot": 19,
   "data/clips/ext_101__ext_lot": 19,
   "data/clips/ext_lot__door": 19,
@@ -3326,6 +3690,9 @@
   "data/clips/hallway_mid__hallway": 19,
   "data/clips/ht_row__air_hockey": 11,
   "data/clips/ht_row__grove_entry": 16,
+  "data/clips/keep__keep_window": 9,
+  "data/clips/keep__stairs_top": 9,
+  "data/clips/keep_window__keep": 9,
   "data/clips/lobby__lobby_n": 11,
   "data/clips/lobby_n__crossroads": 19,
   "data/clips/lobby_n__food_entry": 12,
@@ -3339,6 +3706,9 @@
   "data/clips/palace_mid__palace_entry": 15,
   "data/clips/palace_mid__palace_trasimene": 9,
   "data/clips/palace_trasimene__palace_mid": 9,
+  "data/clips/stairs_bottom__stairs_top": 15,
+  "data/clips/stairs_top__keep": 9,
+  "data/clips/stairs_top__stairs_bottom": 15,
   "data/clips/window_area__lobby_n": 15,
   "data/exhibits/AH_nachos": 13,
   "data/exhibits/AH_rivalry": 13,
@@ -3346,6 +3716,7 @@
   "data/exhibits/B_hightable_0": 13,
   "data/exhibits/B_hivemind_0": 13,
   "data/exhibits/B_ht1up_0": 13,
+  "data/exhibits/C1_fogfire_0": 13,
   "data/exhibits/C1_pax_1": 13,
   "data/exhibits/F1_meanstreets_0": 13,
   "data/exhibits/F1_merc_0": 13,

@@ -7,6 +7,7 @@
 const $ = (id) => document.getElementById(id);
 const gl = $('gl').getContext('webgl', { antialias: true, preserveDrawingBuffer: false });
 const cctx = $('clip').getContext('2d');
+let SEEN_SECRET = false;
 const SETTINGS = { sound: true, skipCuts: false };   // 1110: the pause/settings menu (ui.js); session only, nothing saved
 let LEVEL = null, NODE = null, YAW = 0, PITCH = 0, HFOV = 75, BUSY = false, TEX = null;
 const FPS = 12, RAD = Math.PI / 180;
@@ -177,6 +178,7 @@ async function goNode(id, yaw = null, instant = false) {
   $('load').textContent = 'loading…';
   const im = await img(panoOf(n)); setTexture(im); $('load').textContent = '';
   const prev = NODE; NODE = n; YAW = yaw == null ? n.heading : yaw; PITCH = n.pitch0 || 0;
+  if (/^(stairs_|keep)/.test(id)) SEEN_SECRET = true;            // the map shows the Keep only after the secret door
   const room = (LEVEL.rooms || {})[id];
   $('area').textContent = room ? room.name : n.area; $('sub').textContent = room ? room.sub : '';
   if (window.GW && GW.on) GW.arrive(n, prev);
@@ -239,11 +241,15 @@ function showCard(ex, hs, f) {
     (launch ? `<ul>${launch}</ul>` : '') +
     `<div class="row"><button id="back">◂ back</button>` +
     (ex.labs || []).map((l, i) => `<button class="play" data-i="${i}">▶ ${esc(l.label)}</button>`).join('') +
-    `</div>`;
+    (ex.secret ? `<button id="secret">✦ the private stairs</button>` : '') + `</div>`;
   c.style.display = 'block';
   // PLAY = the game's live site (opens in a new tab; the walk stays where you are)
   c.querySelectorAll('button.play').forEach((b) => { b.onclick = () => window.open(new URL(ex.labs[+b.dataset.i].url, location.href).href, '_blank'); });
   $('back').onclick = async () => { c.style.display = 'none'; if (f) await playFrames(f, true); hideClip(); BUSY = false; draw(); };
+  if (ex.secret) $('secret').onclick = async () => {
+    c.style.display = 'none'; if (f) await playFrames(f, true); BUSY = false;
+    const cut = NODE.hotspots.find((h) => h.kind === 'cut'); if (cut) act(cut);
+  };
 }
 
 // ------------------------------------------------------------------ input
@@ -283,7 +289,7 @@ async function showPano(id, yaw) {          // attract: a node's panorama with n
 }
 function setView(yaw, pitch) { YAW = yaw; if (pitch != null) PITCH = pitch; draw(); }
 window.WALK = { goNode, enterArcade, showPano, setView, draw, get LEVEL() { return LEVEL; }, get NODE() { return NODE; },
-                get BUSY() { return BUSY; }, get YAW() { return YAW; }, SETTINGS,
+                get BUSY() { return BUSY; }, get SEEN_SECRET() { return SEEN_SECRET; }, get YAW() { return YAW; }, SETTINGS,
                 closeCard: () => { $('card').style.display = 'none'; hideClip(); BUSY = false; } };
 (async function boot() {
   resize();

@@ -61,6 +61,7 @@
   /* 1110 front end (ui.js): logos -> attract -> title -> press -> menu; pause / map / settings */
   .screen { position:absolute; inset:0; display:none; align-items:center; justify-content:center; flex-direction:column; z-index:5; }
   .screen.on { display:flex; }
+  .credit { position:absolute; bottom:4%; left:0; right:0; text-align:center; font-size:12px; line-height:1.5; letter-spacing:.06em; opacity:.72; } /* 1125: the house credit line */
   #fade { position:absolute; inset:0; background:#000; opacity:0; pointer-events:none; transition:opacity .45s; z-index:4; } #fade.on { opacity:1; }
   body:not([data-mode="walk"]) #hots, body:not([data-mode="walk"]) #hud, body:not([data-mode="walk"]) #help, body:not([data-mode="walk"]) #pausebtn { display:none; }
   #s-logos { background:#000; cursor:pointer; } #s-logos img { width:min(46%, 520px); animation:ckin 2.6s ease both; }
@@ -101,7 +102,7 @@
   <div id="fade"></div>
   <div class="screen" id="s-logos"><img src="data/ui/logo-ck.png" alt="Castle Killscreen"></div>
   <div class="screen" id="s-attract"><div class="ttl">HYSCORE</div><div class="press">PRESS ENTER</div></div>
-  <div class="screen" id="s-title"><div class="ttl">HYSCORE</div><div class="ttl-sub">the arcade off the 101</div><div class="press">PRESS ENTER</div></div>
+  <div class="screen" id="s-title"><div class="ttl">HYSCORE</div><div class="ttl-sub">the arcade off the 101</div><div class="press">PRESS ENTER</div><div class="credit">Created by Joseph Coleman, Claude, ChatGPT, and Blender<br>Castle Killscreen · Anders &amp; Partners</div></div>
   <div class="screen" id="s-menu"><div class="menu"><h3>HYSCORE</h3>
     <button id="m-enter">▶ ENTER THE ARCADE</button><button id="m-map">⌖ MAP</button><button id="m-settings">⚙ SETTINGS</button><button id="m-quit">⏻ QUIT</button>
     <div class="hint">↑ ↓ choose · Enter select · Esc back</div></div></div>
@@ -117,6 +118,7 @@
 <script src="ckboot.js?v=1"></script>   <!-- CK BOOT STANDARD: audio unlock + unskippable logos -->
 <script src="live.js"></script>
 <script src="gateway.js"></script>   <!-- 1119: THE GATEWAY atrium variants (data/gateway.json) -->
+<script src="store.js"></script>     <!-- 1124: the ANDERS & PARTNERS store (data/store.json), only with ?store -->
 <script src="walk.js"></script>
 <script src="ui.js"></script>
 </body>
