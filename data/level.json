@@ -2063,6 +2063,13 @@
      "dist": 11.0,
      "clip": "data/clips/hallway_mid__gateway",
      "label": "HYSCORE GATEWAY"
+    },
+    {
+     "kind": "inspect",
+     "exhibit": "H_coldsunset_0",
+     "yaw": 323.13,
+     "pitch": 3.81,
+     "label": "COLD SUNSET"
     }
    ],
    "nav": [
@@ -2913,7 +2920,7 @@
    "cab": null,
    "title": "THE HIGH TABLE",
    "game": "THE HIGH TABLE",
-   "pitch": "Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
+   "pitch": "THE HIGH TABLE: air hockey on real air-cushion physics (the board breathes), glide-path knockers, reach and scuff. Fill your meter and GET BIG, TRAP the puck, BLAST it home. Take the Queens' end or the Cohasset Bees'. Modes: PLAY, CAMPAIGN (win a best-of-seven at every table, up to the High Table), CASTLE RULES (three timed periods), JAILBREAK (every table, knocker and puck open, plus RAISE IT!), 2 PLAYER and HIGH-TABLE TO-GO! (from overhead).",
    "controls": null,
    "launch": [],
    "clip": "data/exhibits/AH_rivalry",
@@ -2931,7 +2938,7 @@
    "cab": null,
    "title": "THE HIGH TABLE",
    "game": "THE HIGH TABLE",
-   "pitch": "Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
+   "pitch": "THE HIGH TABLE: air hockey on real air-cushion physics (the board breathes), glide-path knockers, reach and scuff. Fill your meter and GET BIG, TRAP the puck, BLAST it home. Take the Queens' end or the Cohasset Bees'. Modes: PLAY, CAMPAIGN (win a best-of-seven at every table, up to the High Table), CASTLE RULES (three timed periods), JAILBREAK (every table, knocker and puck open, plus RAISE IT!), 2 PLAYER and HIGH-TABLE TO-GO! (from overhead).",
    "controls": null,
    "launch": [],
    "clip": "data/exhibits/AH_nachos",
@@ -2949,7 +2956,7 @@
    "cab": "hivemind",
    "title": "THE HIGH TABLE — HIVEMIND EDITION",
    "game": "THE HIGH TABLE",
-   "pitch": "Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
+   "pitch": "THE HIGH TABLE: air hockey on real air-cushion physics (the board breathes), glide-path knockers, reach and scuff. Fill your meter and GET BIG, TRAP the puck, BLAST it home. Take the Queens' end or the Cohasset Bees'. Modes: PLAY, CAMPAIGN (win a best-of-seven at every table, up to the High Table), CASTLE RULES (three timed periods), JAILBREAK (every table, knocker and puck open, plus RAISE IT!), 2 PLAYER and HIGH-TABLE TO-GO! (from overhead).",
    "controls": "move = stick / mouse · GET BIG (team power) · TRAP (catch) · BLAST (fire it) · first to 7",
    "launch": [],
    "clip": "data/exhibits/B_hivemind_0",
@@ -2967,7 +2974,7 @@
    "cab": "hightable",
    "title": "THE HIGH TABLE (2-player, bees + queens)",
    "game": "THE HIGH TABLE",
-   "pitch": "Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
+   "pitch": "THE HIGH TABLE: air hockey on real air-cushion physics (the board breathes), glide-path knockers, reach and scuff. Fill your meter and GET BIG, TRAP the puck, BLAST it home. Take the Queens' end or the Cohasset Bees'. Modes: PLAY, CAMPAIGN (win a best-of-seven at every table, up to the High Table), CASTLE RULES (three timed periods), JAILBREAK (every table, knocker and puck open, plus RAISE IT!), 2 PLAYER and HIGH-TABLE TO-GO! (from overhead).",
    "controls": "move = stick / mouse · GET BIG (team power) · TRAP (catch) · BLAST (fire it) · first to 7",
    "launch": [],
    "clip": "data/exhibits/B_hightable_0",
@@ -3075,7 +3082,7 @@
    "cab": "ht1up_cougars",
    "title": "THE HIGH TABLE — 1-UP",
    "game": "THE HIGH TABLE",
-   "pitch": "Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
+   "pitch": "The student section's 1-UP, here in PATTY'S POP-UP. THE HIGH TABLE: air hockey on real air-cushion physics (the board breathes), glide-path knockers, reach and scuff. Fill your meter and GET BIG, TRAP the puck, BLAST it home. Take the Queens' end or the Cohasset Bees'. Modes: PLAY, CAMPAIGN (win a best-of-seven at every table, up to the High Table), CASTLE RULES (three timed periods), JAILBREAK (every table, knocker and puck open, plus RAISE IT!), 2 PLAYER and HIGH-TABLE TO-GO! (from overhead).",
    "controls": "move = stick / mouse · GET BIG (team power) · TRAP (catch) · BLAST (fire it) · first to 7",
    "launch": [],
    "clip": "data/exhibits/PS_ht1up_cougars_0",
@@ -3163,7 +3170,7 @@
    "cab": "ht1up",
    "title": "THE HIGH TABLE — 1-UP",
    "game": "THE HIGH TABLE",
-   "pitch": "Blacklight LIVE air hockey in HYSCORE FOREST — real air-cushion physics (the board breathes), glide-path knockers, reach/scuff. Fill your team-power and GET BIG, TRAP the puck and BLAST the point-bomb. Pick your side — BEE AFRAID or QUEEN'S RANSOM. JOE'S ONE-TIMER JAILBREAK opens all the machines.",
+   "pitch": "THE HIGH TABLE: air hockey on real air-cushion physics (the board breathes), glide-path knockers, reach and scuff. Fill your meter and GET BIG, TRAP the puck, BLAST it home. Take the Queens' end or the Cohasset Bees'. Modes: PLAY, CAMPAIGN (win a best-of-seven at every table, up to the High Table), CASTLE RULES (three timed periods), JAILBREAK (every table, knocker and puck open, plus RAISE IT!), 2 PLAYER and HIGH-TABLE TO-GO! (from overhead).",
    "controls": "move = stick / mouse · GET BIG (team power) · TRAP (catch) · BLAST (fire it) · first to 7",
    "launch": [],
    "clip": "data/exhibits/F_ht1up_0",
@@ -3226,11 +3233,30 @@
    "cab": null,
    "title": "THE STRAND ON GRAND",
    "game": "THE STRAND ON GRAND",
-   "pitch": null,
-   "controls": null,
+   "pitch": "The building on Grand is a cover for an alien space elevator. Lovecraftian bureaucratic horror from Anders & Partners: Dick Crosslatch and the medium Cornelia start in the boiler room and go door to door, convincing the tenants to follow them out through the attic's green door. Every attempt stirs the building. The Amoebas hunt the party: the moths, Patrolman Myers (mind-controlled under his hat), the imitations (one tenant isn't who they say) and two aliens who turn people rather than kill them. The score is the people saved.",
+   "controls": "THE BOARD GAME: 2 players, THE CROSSLATCHES vs THE AMOEBAS · THE CARD GAME, GET THEM OUT: 3–7 players, the hosts climb a sealed 5-floor building while the BUILDING and AMOEBA decks draw themselves",
+   "status": "COMING · in design, no public build yet",
    "launch": [],
    "clip": null,
    "labs": [],
+   "frames": 0
+  },
+  "H_coldsunset_0": {
+   "id": "H_coldsunset_0",
+   "node": "hallway_mid",
+   "cab": null,
+   "title": "COLD SUNSET",
+   "game": "COLD SUNSET",
+   "pitch": "An asymmetric hide-and-hunt board game by Joseph Coleman. One player is THE WALKER, a veteran loose on a Tennessee mountain with a county sheriff's department behind him. Everyone else is THE LAW. It isn't a game of escape. It's a game of evasion.",
+   "controls": "in your browser: the Walker or the Law against the CPU, hot-seat for 2–6 players, or watch the CPUs play it out · the expansion: COLD SUNSET: WE'RE HERE TO HELP",
+   "launch": [],
+   "clip": null,
+   "labs": [
+    {
+     "label": "PLAY COLD SUNSET",
+     "url": "https://anderspartnersck.github.io/COLDSUNSET/"
+    }
+   ],
    "frames": 0
   },
   "M_claw_sheep_0": {
@@ -3374,7 +3400,7 @@
   },
   "keep": {
    "name": "COLEMAN'S KEEP",
-   "sub": "THE OFFICE · every cabinet is live"
+   "sub": "THE OFFICE · overlooking the arcade floor"
   },
   "ext_101": {
    "name": "OFF THE 101",

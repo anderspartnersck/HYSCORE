@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HYSCORE Directory</title>
+<meta name="description" content="THE HYSCORE DIRECTORY: every room, stop and game card in the Castle Killscreen arcade off the 101, with a link straight to each one and its PLAY link.">
+<link rel="icon" href="data/ui/logo-ck.png">
+<!-- HYSCORE 1125 — THE DIRECTORY (HS-4104). One page, built in the browser from data/level.json (+ data/gateway.json) at
+     load: no copy of the data lives here. Every room, every stop (hidden stops excluded), every game card with its deep
+     link (index.html#node/exhibit) and its public PLAY link. Saves nothing. -->
+<style>
+  :root { --ink:#efe6ff; --dim:#a99cc8; --neon:#b36bff; --green:#53ff8a; --pink:#ff3fb4; --gold:#e8c066; --bg:#07050c; --panel:rgba(14,8,26,.86); color-scheme:dark; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 "Helvetica Neue", Arial, sans-serif; }
+  body { background:radial-gradient(ellipse at 50% -10%, rgba(179,107,255,.18), transparent 55%), var(--bg); min-height:100vh; }
+  a { color:inherit; }
+  .wrap { max-width:1060px; margin:0 auto; padding:28px 16px 40px; }
+  header { text-align:center; padding:10px 0 6px; }
+  .ttl { font-weight:800; letter-spacing:.32em; padding-left:.32em; font-size:clamp(34px, 8vw, 74px); color:#fff; margin:0;
+         text-shadow:0 0 6px #fff, 0 0 18px var(--pink), 0 0 42px var(--pink), 0 0 80px var(--neon); }
+  .sub { color:var(--dim); letter-spacing:.3em; font-size:12px; text-transform:uppercase; margin-top:6px; }
+  .lede { color:var(--ink); opacity:.85; max-width:640px; margin:14px auto 0; font-size:14px; }
+  .bar { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:18px 0 6px; }
+  .btn { display:inline-block; text-decoration:none; font:inherit; font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink);
+         background:rgba(179,107,255,.18); border:1px solid var(--neon); border-radius:6px; padding:8px 14px; cursor:pointer; }
+  .btn:hover, .btn:focus-visible { background:rgba(179,107,255,.35); outline:none; }
+  .btn.play { border-color:var(--green); background:rgba(83,255,138,.14); }
+  .btn.play:hover, .btn.play:focus-visible { background:rgba(83,255,138,.28); }
+  .btn.sm { font-size:11px; padding:5px 9px; letter-spacing:.1em; }
+  input[type=search] { font:inherit; font-size:14px; color:var(--ink); background:#0d0818; border:1px solid rgba(179,107,255,.5); border-radius:6px;
+         padding:8px 12px; width:min(340px, 100%); }
+  input[type=search]:focus { outline:none; border-color:var(--green); box-shadow:0 0 10px rgba(83,255,138,.35); }
+  nav.jump { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:10px 0 0; }
+  nav.jump a { font-size:11px; letter-spacing:.14em; text-decoration:none; color:var(--c, var(--dim)); border:1px solid currentColor; border-radius:4px; padding:3px 7px; opacity:.85; }
+  h2 { font-size:13px; letter-spacing:.3em; color:var(--dim); font-weight:700; margin:34px 0 10px; text-align:center; }
+  .games { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:10px; }
+  .game, .area { background:var(--panel); border:1px solid rgba(179,107,255,.4); border-radius:10px; padding:12px 14px; }
+  .game h3 { margin:0; font-size:15px; letter-spacing:.08em; }
+  .game .status { display:inline-block; margin-top:6px; padding:1px 8px; border:1px solid var(--gold); border-radius:4px; color:var(--gold); font-size:10.5px; letter-spacing:.14em; }
+  .game .pitch { color:var(--ink); opacity:.82; font-size:13px; margin:6px 0 0; }
+  .row { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; align-items:center; }
+  .find { color:var(--dim); font-size:11px; letter-spacing:.14em; }
+  .area { --c:var(--neon); border-color:var(--c); margin-top:12px; box-shadow:0 0 18px color-mix(in srgb, var(--c) 18%, transparent); }
+  .area > h3 { margin:0 0 6px; color:var(--c); font-size:13px; letter-spacing:.24em; text-shadow:0 0 8px var(--c); }
+  .stop { border-top:1px solid rgba(255,255,255,.08); padding:9px 0 6px; }
+  .stop:first-of-type { border-top:0; }
+  .stop .name { display:flex; flex-wrap:wrap; gap:8px; align-items:baseline; justify-content:space-between; }
+  .stop .name b { font-size:14px; letter-spacing:.12em; }
+  .stop .room { color:var(--dim); font-size:12px; }
+  .card { margin:8px 0 0 12px; padding-left:10px; border-left:2px solid var(--pink); }
+  .card .t { font-weight:700; font-size:13px; letter-spacing:.04em; }
+  .card .g { color:var(--green); font-size:11px; letter-spacing:.1em; text-transform:uppercase; }
+  .card .row { margin-top:5px; }
+  .empty { color:var(--dim); text-align:center; margin:20px 0; }
+  .hide { display:none !important; }
+  footer { text-align:center; color:var(--dim); font-size:12px; line-height:1.6; letter-spacing:.06em; margin-top:40px; opacity:.8; }
+  #err { color:var(--pink); text-align:center; margin:30px 0; }
+  @media (max-width:520px) { .wrap { padding:18px 16px 32px; } .card { margin-left:4px; } .games { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 class="ttl">HYSCORE</h1>
+    <div class="sub">the directory · the arcade off the 101</div>
+    <p class="lede">Every room, every stop and every game in the building. <b>GO</b> drops you into the walk right there;
+      a game's name opens its card at its cabinet or table; <b>PLAY</b> opens the game itself.</p>
+    <div class="bar"><a class="btn" href="index.html">▶ enter the arcade</a><input type="search" id="q" placeholder="find a game or a room" aria-label="find a game or a room"></div>
+    <nav class="jump" id="jump"></nav>
+  </header>
+  <div id="err" class="hide"></div>
+  <h2 id="h-games">THE GAMES</h2>
+  <div class="games" id="games"></div>
+  <h2 id="h-rooms">THE ROOMS</h2>
+  <div id="rooms"></div>
+  <div class="empty hide" id="none">nothing matches</div>
+  <footer>Created by Joseph Coleman, Claude, ChatGPT, and Blender<br>Castle Killscreen · Anders &amp; Partners</footer>
+</div>
+<script src="places.js"></script>
+<script>
+'use strict';
+(async function () {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const P = window.HYPLACES;
+  let L;
+  try { L = await (await fetch('data/level.json')).json(); }
+  catch (e) { $('err').textContent = 'The directory could not load the arcade (' + e.message + ').'; $('err').classList.remove('hide'); return; }
+  try {   // THE GATEWAY's own stops (the game tables) come from data/gateway.json, as in the walk
+    const r = await fetch('data/gateway.json');
+    if (r.ok) { const G = await r.json(); for (const [id, g] of Object.entries(G.nodes || {})) if (!L.nodes[id] && g.pos) L.nodes[id] = { id, area: g.area, pos: g.pos }; }
+  } catch (e) {}
+  const walk = (node, ex) => 'index.html' + P.hashFor(node, ex);
+  const plays = (labs) => labs.map((l) => `<a class="btn play sm" href="${esc(new URL(l.url, location.href).href)}" target="_blank" rel="noopener">▶ ${esc(l.label)}</a>`).join('');
+  const groups = P.groups(L, false);                 // hidden stops (the door, the store, the stair + the Keep) never listed
+  const shown = new Set(groups.flatMap((g) => g.stops.map((s) => s.id)));
+  // THE GAMES: every game with a card on a listed stop; its PLAY links (deduped) and where to find it
+  const games = new Map();
+  for (const g of groups) for (const s of g.stops) for (const e of s.cards) {
+    const k = e.game || e.title; if (!games.has(k)) games.set(k, { name: k, cards: [], labs: new Map(), status: '', pitch: '' });
+    const G = games.get(k); G.cards.push({ e, s }); if (e.status) G.status = e.status; if (!G.pitch && e.pitch) G.pitch = e.pitch;
+    for (const l of P.publicLabs(e)) if (!G.labs.has(l.url)) G.labs.set(l.url, l);
+  }
+  const short = (t) => { t = String(t || ''); return t.length > 190 ? t.slice(0, 186).replace(/\s+\S*$/, '') + ' …' : t; };
+  $('games').innerHTML = [...games.values()].sort((a, b) => a.name.localeCompare(b.name)).map((G) => {
+    const where = G.cards.map(({ e, s }) => `<a class="btn sm" href="${walk(s.id, e.id)}" title="${esc(e.title)}">⌖ ${esc(s.name)}</a>`).join('');
+    return `<div class="game" data-q="${esc((G.name + ' ' + G.cards.map((c) => c.e.title + ' ' + c.s.name).join(' ')).toLowerCase())}">` +
+      `<h3>${esc(G.name)}</h3>` + (G.status ? `<div class="status">${esc(G.status)}</div>` : '') +
+      (G.pitch ? `<p class="pitch">${esc(short(G.pitch))}</p>` : '') +
+      `<div class="row">${plays([...G.labs.values()])}</div><div class="row"><span class="find">FIND IT ›</span>${where}</div></div>`;
+  }).join('');
+  // THE ROOMS: area -> stop (GO) -> its cards (open the card in the walk) + PLAY
+  $('rooms').innerHTML = groups.map((g) => `<section class="area" id="a-${esc(g.area.replace(/[^A-Z0-9]+/gi, '-').toLowerCase())}" style="--c:${g.col}"><h3>${esc(g.area)}</h3>` +
+    g.stops.map((s) => {
+      const room = (L.rooms || {})[s.id];
+      return `<div class="stop" data-q="${esc((g.area + ' ' + s.name + ' ' + s.cards.map((e) => e.title + ' ' + (e.game || '')).join(' ')).toLowerCase())}">` +
+        `<div class="name"><b>${esc(s.name)}</b><a class="btn sm" href="${walk(s.id)}">GO ›</a></div>` + (room && room.sub ? `<div class="room">${esc(room.sub)}</div>` : '') +
+        s.cards.map((e) => `<div class="card"><a class="t" href="${walk(s.id, e.id)}">${esc(e.title)}</a> <span class="g">${esc(e.game || '')}</span>` +
+          (e.status ? ` <span class="g" style="color:var(--gold)">${esc(e.status)}</span>` : '') +
+          (P.publicLabs(e).length ? `<div class="row">${plays(P.publicLabs(e))}</div>` : '') + `</div>`).join('') + `</div>`;
+    }).join('') + `</section>`).join('');
+  $('jump').innerHTML = groups.map((g) => `<a href="#a-${esc(g.area.replace(/[^A-Z0-9]+/gi, '-').toLowerCase())}" style="--c:${g.col}">${esc(g.area)}</a>`).join('');
+  // find: filters the games and the stops as you type (nothing is kept)
+  $('q').addEventListener('input', () => {
+    const q = $('q').value.trim().toLowerCase(); let n = 0;
+    for (const el of document.querySelectorAll('[data-q]')) { const on = !q || el.dataset.q.includes(q); el.classList.toggle('hide', !on); n += on; }
+    for (const a of document.querySelectorAll('.area')) a.classList.toggle('hide', !a.querySelector('.stop:not(.hide)'));
+    $('none').classList.toggle('hide', n > 0);
+  });
+  document.body.dataset.ready = String(shown.size);
+})();
+</script>
+</body>
+</html>

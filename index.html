@@ -49,6 +49,7 @@
   #card .game { color:var(--green); font-size:12px; letter-spacing:.1em; text-transform:uppercase; }
   #card p { margin:8px 0; color:var(--ink); }
   #card .ctl { color:var(--dim); font-size:12px; }
+  #card .status { display:inline-block; margin:6px 0 2px; padding:2px 8px; border:1px solid #e8c066; border-radius:4px; color:#e8c066; font-size:11px; letter-spacing:.14em; text-transform:uppercase; } /* 1125: a game with no public build: COMING */
   #card ul { margin:8px 0 0; padding-left:18px; color:var(--dim); font-size:12px; }
   #card .row { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
   button { font:inherit; color:var(--ink); background:rgba(179,107,255,.18); border:1px solid var(--neon); border-radius:6px; padding:7px 12px; cursor:pointer; }
@@ -80,9 +81,30 @@
   .menu button:focus { outline:none; background:rgba(83,255,138,.18); border-color:var(--green); box-shadow:0 0 12px rgba(83,255,138,.4); }
   .menu .hint { color:var(--dim); font-size:11px; text-align:center; margin-top:4px; letter-spacing:.06em; }
   #s-menu, #s-pause, #s-settings, #s-map { background:rgba(4,2,8,.55); }
-  #s-map .menu { min-width:min(820px, 92%); max-height:96%; padding:14px 18px; gap:6px; }
-  #map-svg { width:100%; height:min(74vh, 640px); background:#06040b; border-radius:8px; }
-  #map-svg .mapnode { cursor:pointer; } #map-svg .mapnode:hover circle { stroke-width:.4; }
+  /* 1125 fast travel: the labelled map + the LIST (rooms -> stops -> cards) side by side; tabs on a narrow screen */
+  #s-map .menu { width:min(1120px, 96%); height:94%; box-sizing:border-box; padding:12px 16px; gap:6px; }
+  #map-body { flex:1; min-height:0; display:flex; gap:12px; }
+  #map-svg { flex:1.15; min-width:0; height:100%; background:#06040b; border-radius:8px; }
+  #map-svg .mapnode { cursor:pointer; } #map-svg .mapnode:hover circle:not(.hitpad) { stroke-width:.5; }
+  #map-svg .maplab { fill:#efe6ff; font-weight:700; paint-order:stroke; stroke:#06040b; stroke-width:.35; letter-spacing:.02em; }
+  #map-svg .mapnode.here .maplab { fill:#53ff8a; }
+  #map-list { flex:1; min-width:0; overflow-y:auto; scrollbar-color:rgba(179,107,255,.45) transparent; scrollbar-width:thin; background:#06040b; border-radius:8px; padding:6px 10px 10px; box-sizing:border-box; }
+  #map-list .lgrp { --c:var(--neon); margin-top:8px; }
+  #map-list .larea { color:var(--c); font-weight:800; font-size:11px; letter-spacing:.22em; border-bottom:1px solid var(--c); padding:2px 0 3px; margin-bottom:4px; text-shadow:0 0 8px var(--c); }
+  #map-list .lstop { margin:2px 0 5px; }
+  #map-list button { font-size:12px; letter-spacing:.1em; padding:5px 9px; text-align:left; }
+  #map-list .lgo { width:100%; border-color:var(--c); background:rgba(255,255,255,.03); font-weight:700; }
+  #map-list .lgo.here { border-color:var(--green); color:var(--green); background:rgba(83,255,138,.12); }
+  #map-list .lcards { display:flex; flex-wrap:wrap; gap:4px; margin:4px 0 0 12px; }
+  #map-list .lcard { font-size:10.5px; letter-spacing:.06em; padding:3px 7px; border-color:var(--pink); background:rgba(255,63,180,.08); }
+  #map-list button:focus, #map-tabs button:focus { outline:none; box-shadow:0 0 0 2px var(--green); }
+  #map-tabs { display:none; gap:6px; } #map-tabs button { flex:1; font-size:12px; letter-spacing:.16em; padding:6px; } #map-tabs button.on { border-color:var(--green); background:rgba(83,255,138,.16); }
+  #s-map[data-tab="map"] #map-list, #s-map[data-tab="list"] #map-svg { display:none; }
+  #s-map #map-back { padding:8px 14px; font-size:13px; }
+  @media (max-width:899px) { #map-tabs { display:flex; } #s-map .menu { width:98%; height:97%; padding:8px 10px; gap:5px; } #s-map h3 { display:none; }
+    #s-map #map-tabs button, #s-map #map-back { font-size:11px; padding:5px 8px; letter-spacing:.14em; } #map-here { font-size:10px; }
+    #s-map[data-tab="list"] #map-list { column-count:2; column-gap:14px; } #map-list .lstop, #map-list .larea { break-inside:avoid; } }
+  #card .row .share { border-color:var(--dim); background:rgba(255,255,255,.04); }
   #map-svg text { font-family:"Helvetica Neue",Arial,sans-serif; font-weight:700; letter-spacing:.05em; pointer-events:none; }
   #map-here { color:var(--green); font-size:12px; letter-spacing:.12em; text-align:center; }
   #pausebtn { position:absolute; left:14px; bottom:12px; font-size:12px; padding:5px 10px; opacity:.75; }
@@ -104,21 +126,24 @@
   <div class="screen" id="s-attract"><div class="ttl">HYSCORE</div><div class="press">PRESS ENTER</div></div>
   <div class="screen" id="s-title"><div class="ttl">HYSCORE</div><div class="ttl-sub">the arcade off the 101</div><div class="press">PRESS ENTER</div><div class="credit">Created by Joseph Coleman, Claude, ChatGPT, and Blender<br>Castle Killscreen · Anders &amp; Partners</div></div>
   <div class="screen" id="s-menu"><div class="menu"><h3>HYSCORE</h3>
-    <button id="m-enter">▶ ENTER THE ARCADE</button><button id="m-map">⌖ MAP</button><button id="m-settings">⚙ SETTINGS</button><button id="m-quit">⏻ QUIT</button>
+    <button id="m-enter">▶ ENTER THE ARCADE</button><button id="m-map">⌖ MAP</button><button id="m-dir">☰ DIRECTORY</button><button id="m-settings">⚙ SETTINGS</button><button id="m-quit">⏻ QUIT</button>
     <div class="hint">↑ ↓ choose · Enter select · Esc back</div></div></div>
   <div class="screen" id="s-pause"><div class="menu"><h3>PAUSED</h3>
-    <button id="p-resume">▶ RESUME</button><button id="p-map">⌖ MAP</button><button id="p-settings">⚙ SETTINGS</button>
+    <button id="p-resume">▶ RESUME</button><button id="p-map">⌖ MAP</button><button id="p-share">⧉ COPY LINK TO THIS SPOT</button><button id="p-settings">⚙ SETTINGS</button>
     <button id="p-door">⇤ BACK TO THE DOOR</button><button id="p-title">⏻ QUIT TO TITLE</button></div></div>
   <div class="screen" id="s-settings"><div class="menu"><h3>SETTINGS</h3>
     <button id="set-sound">SOUND · ON</button><button id="set-cuts">CUT SCENES · PLAY</button><button id="set-back">◂ BACK</button>
     <div class="hint">this session only: the web build saves nothing</div></div></div>
-  <div class="screen" id="s-map"><div class="menu"><h3>MAP · PICK A ROOM</h3><svg id="map-svg"></svg><div id="map-here"></div>
+  <div class="screen" id="s-map"><div class="menu"><h3>MAP · PICK A ROOM OR A GAME</h3>
+    <div id="map-tabs"><button data-tab="map">⌖ MAP</button><button data-tab="list">☰ LIST</button></div>
+    <div id="map-body"><svg id="map-svg"></svg><div id="map-list"></div></div><div id="map-here"></div>
     <button id="map-back">◂ BACK</button></div></div>
 </div></div>
 <script src="ckboot.js?v=1"></script>   <!-- CK BOOT STANDARD: audio unlock + unskippable logos -->
 <script src="live.js"></script>
 <script src="gateway.js"></script>   <!-- 1119: THE GATEWAY atrium variants (data/gateway.json) -->
 <script src="store.js"></script>     <!-- 1124: the ANDERS & PARTNERS store (data/store.json), only with ?store -->
+<script src="places.js"></script>    <!-- 1125: stop names, deep links (#node/exhibit), copy link -->
 <script src="walk.js"></script>
 <script src="ui.js"></script>
 </body>

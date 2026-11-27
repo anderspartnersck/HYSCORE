@@ -183,7 +183,19 @@ async function goNode(id, yaw = null, instant = false) {
   $('area').textContent = room ? room.name : n.area; $('sub').textContent = room ? room.sub : '';
   if (window.GW && GW.on) GW.arrive(n, prev);
   buildHots(); draw(); hideClip(); preload(n);
-  try { history.replaceState(null, '', '#' + id); } catch (e) {}
+  setHash(id);
+}
+// 1125: the address bar is always a link to where you stand (#node) or the card you have open (#node/exhibit)
+function setHash(node, ex) {
+  const h = window.HYPLACES ? HYPLACES.hashFor(node, ex) : '#' + node + (ex ? '/' + ex : '');
+  try { history.replaceState(null, '', h); } catch (e) {}
+}
+// open a game card at the current stop: through its pink ring (turn + push-in) when the stop has one, else straight up
+async function openCard(exId) {
+  const ex = LEVEL.exhibits[exId]; if (!ex || !NODE) return false;
+  const hs = NODE.hotspots.find((h) => h.kind === 'inspect' && h.exhibit === exId);
+  if (hs) await act(hs); else { BUSY = false; showCard(ex, null, null); }
+  return true;
 }
 const LOADED = new Set();         // urls whose image has decoded (so a passing-through panorama is used only if it is ready)
 function preload(n) {
@@ -237,15 +249,18 @@ function showCard(ex, hs, f) {
   const c = $('card'); BUSY = true;
   const launch = (ex.launch || []).map((l) => `<li>${esc(l.label)} <span style="opacity:.6">— ${esc(l.room)}</span></li>`).join('');
   c.innerHTML = `<div class="game">${esc(ex.game || '')}</div><h2>${esc(ex.title)}</h2>` +
+    (ex.status ? `<div class="status">${esc(ex.status)}</div>` : '') +
     (ex.pitch ? `<p>${esc(ex.pitch)}</p>` : '') + (ex.controls ? `<div class="ctl">${esc(ex.controls)}</div>` : '') +
     (launch ? `<ul>${launch}</ul>` : '') +
     `<div class="row"><button id="back">◂ back</button>` +
     (ex.labs || []).map((l, i) => `<button class="play" data-i="${i}">▶ ${esc(l.label)}</button>`).join('') +
+    `<button class="share" id="share">⧉ copy link</button>` +
     (ex.secret ? `<button id="secret">✦ the private stairs</button>` : '') + `</div>`;
-  c.style.display = 'block';
+  c.style.display = 'block'; if (NODE) setHash(NODE.id, ex.id);
+  $('share').onclick = () => { if (NODE && window.HYPLACES) HYPLACES.share(NODE.id, ex.id); };
   // PLAY = the game's live site (opens in a new tab; the walk stays where you are)
   c.querySelectorAll('button.play').forEach((b) => { b.onclick = () => window.open(new URL(ex.labs[+b.dataset.i].url, location.href).href, '_blank'); });
-  $('back').onclick = async () => { c.style.display = 'none'; if (f) await playFrames(f, true); hideClip(); BUSY = false; draw(); };
+  $('back').onclick = async () => { c.style.display = 'none'; if (NODE) setHash(NODE.id); if (f) await playFrames(f, true); hideClip(); BUSY = false; draw(); };
   if (ex.secret) $('secret').onclick = async () => {
     c.style.display = 'none'; if (f) await playFrames(f, true); BUSY = false;
     const cut = NODE.hotspots.find((h) => h.kind === 'cut'); if (cut) act(cut);
@@ -290,12 +305,29 @@ async function showPano(id, yaw) {          // attract: a node's panorama with n
 function setView(yaw, pitch) { YAW = yaw; if (pitch != null) PITCH = pitch; draw(); }
 window.WALK = { goNode, enterArcade, showPano, setView, draw, get LEVEL() { return LEVEL; }, get NODE() { return NODE; },
                 get BUSY() { return BUSY; }, get SEEN_SECRET() { return SEEN_SECRET; }, get YAW() { return YAW; }, SETTINGS,
-                closeCard: () => { $('card').style.display = 'none'; hideClip(); BUSY = false; } };
+                openCard, closeCard: () => { if ($('card').style.display === 'block' && NODE) setHash(NODE.id); $('card').style.display = 'none'; hideClip(); BUSY = false; } };
 (async function boot() {
   resize();
   LEVEL = await (await fetch('data/level.json')).json(); HFOV = LEVEL.hfov || 75;
   if (window.GW) await GW.init(LEVEL);          // 1119: the GATEWAY atrium's variants (data/gateway.json), if packed
-  const start = (location.hash || '').slice(1);
-  if (start && LEVEL.nodes[start]) { if (window.UI) UI.skipBoot(); await goNode(start); return; }
-  if (window.UI) UI.boot(); else await enterArcade();
+  // 1125: #node or #node/exhibit (a card link; #exhibit alone finds its stop). Anything else boots the house flow.
+  const want = deepLink(location.hash);
+  if (want) { if (window.UI) UI.skipBoot(); await goNode(want.node); if (want.exhibit) await openCard(want.exhibit); }
+  else if (window.UI) UI.boot(); else await enterArcade();
+  window.addEventListener('hashchange', async () => {        // a pasted / edited link while the walk is open
+    const w = deepLink(location.hash); if (!w) return;
+    if ($('card').style.display === 'block') { $('card').style.display = 'none'; hideClip(); BUSY = false; }
+    if (BUSY) return;
+    if (NODE && w.node === NODE.id && !w.exhibit) return;
+    if (window.UI && UI.jump) await UI.jump(w.node, w.exhibit); else { await goNode(w.node); if (w.exhibit) await openCard(w.exhibit); }
+  });
 })();
+function deepLink(hash) {
+  const p = window.HYPLACES ? HYPLACES.parse(hash) : (hash && hash.length > 1 ? { node: hash.slice(1).split('/')[0], exhibit: hash.slice(1).split('/')[1] || '' } : null);
+  if (!p) return null;
+  let node = p.node, ex = p.exhibit;
+  if (!LEVEL.nodes[node] && LEVEL.exhibits[node]) { ex = node; node = LEVEL.exhibits[node].node; }
+  if (!LEVEL.nodes[node]) return null;
+  if (ex && !LEVEL.exhibits[ex]) ex = '';
+  return { node, exhibit: ex };
+}
